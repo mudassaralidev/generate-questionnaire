@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.react-flow__edge-textbg {
+  fill: #dcfce7;
+}
+.react-flow__edge-text {
+  font-size: 10px !important;
+  font-weight: 600;
+  fill: #15803d !important;
+}
+.react-flow__controls-button {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.form-flow-chart .react-flow__node {
+  cursor: default;
+  user-select: text;
+  pointer-events: all;
+  /* body uses Tailwind antialiased globally; restore subpixel rendering for chart nodes */
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: auto;
+}
+
+.form-flow-chart .react-flow__node * {
+  user-select: text;
+}
+
+/* Custom node roots must not add transforms — React Flow handles positioning. */
+.form-flow-chart .react-flow__node > div {
+  transform: none !important;
+  filter: none;
+  opacity: 1;
+}
+
+.form-flow-chart .react-flow__edge-path {
+  stroke-linecap: square;
+}
+
+.form-flow-chart .react-flow__controls-button:last-child {
+  border-bottom: none;
+}
+
+.form-flow-chart .react-flow__minimap {
+  display: none !important;
+}
+
+.form-flow-chart .react-flow__attribution {
+  display: none !important;
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-primary-500;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  .btn-ghost {
+    @apply btn text-gray-600 hover:bg-gray-100 focus:ring-gray-400;
+  }
+  .input {
+    @apply block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+}
