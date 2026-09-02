@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Select from "../common/Select";
+import SearchableSelect from "../common/SearchableSelect";
 import Spinner from "../common/Spinner";
 import ErrorAlert from "../common/ErrorAlert";
 import { useTenants } from "../../hooks/useTenants";
@@ -80,29 +80,29 @@ export default function StepOneLoader() {
               <Spinner />
             </div>
           ) : (
-            <Select
+            <SearchableSelect
               label="Tenant"
               value={form.tenant}
               onChange={handleChange("tenant")}
               options={tenantOptions}
-              placeholder="Select a tenant..."
+              placeholder="Search tenant..."
             />
           )}
 
-          <Select
+          <SearchableSelect
             label="Submission Type"
             value={form.submission_type}
             onChange={handleChange("submission_type")}
             options={SUBMISSION_TYPES}
-            placeholder="Select submission type..."
+            placeholder="Search submission type..."
           />
 
-          <Select
+          <SearchableSelect
             label="Form Type"
             value={form.form_type}
             onChange={handleChange("form_type")}
             options={FORM_TYPES}
-            placeholder="Select form type..."
+            placeholder="Search form type..."
           />
 
           {error && (
