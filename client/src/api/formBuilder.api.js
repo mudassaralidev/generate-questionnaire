@@ -8,3 +8,6 @@ export const createFormConfig = (data) =>
 
 export const updateFormConfig = (id, data) =>
   api.put(`/form-builder/${id}`, data).then((r) => r.data);
+
+export const deleteFormConfig = (id) =>
+  api.delete(`/form-builder/${id}`).then((r) => r.data);

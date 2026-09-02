@@ -1,8 +1,13 @@
 import { useState, useCallback } from 'react';
-import { createFormConfig, updateFormConfig } from '../api/formBuilder.api';
+import {
+  createFormConfig,
+  updateFormConfig,
+  deleteFormConfig,
+} from '../api/formBuilder.api';
 
 export const useFormBuilder = () => {
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const createConfig = useCallback(async (payload) => {
     try {
@@ -22,9 +27,20 @@ export const useFormBuilder = () => {
     }
   }, []);
 
+  const removeConfig = useCallback(async (id) => {
+    try {
+      setDeleting(true);
+      return await deleteFormConfig(id);
+    } finally {
+      setDeleting(false);
+    }
+  }, []);
+
   return {
     loading,
+    deleting,
     createConfig,
     editConfig,
+    removeConfig,
   };
 };
