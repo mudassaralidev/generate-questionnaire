@@ -4,6 +4,7 @@ import { useBuilder } from "../../context/BuilderContext";
 import { useFormBuilder } from "../../hooks/useFormConfig";
 import { validateFormIntegrity } from "../../utils/validation";
 import { cleanQuestionsForSave } from "../../utils/helpers";
+import { requiresSubmissionType, buildConfigPayloadForSave } from "../../constants/formMeta";
 import ErrorAlert from "../common/ErrorAlert";
 import Spinner from "../common/Spinner";
 import FormFlowModal from "./FormFlowModal";
@@ -46,7 +47,10 @@ export default function BuilderHeader() {
       return;
     }
 
-    const payload = { ...meta, questions: cleanQuestionsForSave(questions) };
+    const payload = buildConfigPayloadForSave(
+      meta,
+      cleanQuestionsForSave(questions),
+    );
 
     try {
       if (mode === "edit" && configId) {
@@ -109,7 +113,9 @@ export default function BuilderHeader() {
                 </span>
               </div>
               <p className="text-xs text-gray-400">
-                {meta.tenant} · {meta.submission_type} · {meta.form_type}
+                {[meta.tenant, requiresSubmissionType(meta.form_type) && meta.submission_type, meta.form_type]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
           </div>

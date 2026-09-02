@@ -6,7 +6,11 @@ import ErrorAlert from "../common/ErrorAlert";
 import { useTenants } from "../../hooks/useTenants";
 import { useBuilder } from "../../context/BuilderContext";
 import { resolveFormConfig } from "../../api/formBuilder.api";
-import { FORM_TYPES, SUBMISSION_TYPES } from "../../constants/formMeta";
+import {
+  FORM_TYPES,
+  SUBMISSION_TYPES,
+  requiresSubmissionType,
+} from "../../constants/formMeta";
 
 export default function StepOneLoader() {
   const navigate = useNavigate();
@@ -26,19 +30,42 @@ export default function StepOneLoader() {
   const [loading, setLoading] = useState(false);
 
   const tenantOptions = tenants.map((t) => ({ value: t, label: t }));
+  const showSubmissionType = requiresSubmissionType(form.form_type);
 
   const handleChange = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
+  const handleFormTypeChange = (e) => {
+    const form_type = e.target.value;
+    setForm((f) => ({
+      ...f,
+      form_type,
+      submission_type: requiresSubmissionType(form_type) ? f.submission_type : "",
+    }));
+  };
+
   const handleLoad = async () => {
-    if (!form.tenant || !form.submission_type || !form.form_type) {
+    const missingSubmissionType =
+      showSubmissionType && !form.submission_type;
+
+    if (!form.tenant || !form.form_type || missingSubmissionType) {
       setError({ message: "Please fill all fields before loading." });
       return;
     }
+
     setError(null);
     setLoading(true);
     try {
-      const res = await resolveFormConfig(form);
+      const params = {
+        tenant: form.tenant,
+        form_type: form.form_type,
+      };
+
+      if (showSubmissionType) {
+        params.submission_type = form.submission_type;
+      }
+
+      const res = await resolveFormConfig(params);
       loadConfig(res.config, res.mode);
       navigate("/builder");
     } catch (err) {
@@ -90,20 +117,22 @@ export default function StepOneLoader() {
           )}
 
           <SearchableSelect
-            label="Submission Type"
-            value={form.submission_type}
-            onChange={handleChange("submission_type")}
-            options={SUBMISSION_TYPES}
-            placeholder="Search submission type..."
-          />
-
-          <SearchableSelect
             label="Form Type"
             value={form.form_type}
-            onChange={handleChange("form_type")}
+            onChange={handleFormTypeChange}
             options={FORM_TYPES}
             placeholder="Search form type..."
           />
+
+          {showSubmissionType && (
+            <SearchableSelect
+              label="Submission Type"
+              value={form.submission_type}
+              onChange={handleChange("submission_type")}
+              options={SUBMISSION_TYPES}
+              placeholder="Search submission type..."
+            />
+          )}
 
           {error && (
             <ErrorAlert message={error.message} errors={error.errors} />

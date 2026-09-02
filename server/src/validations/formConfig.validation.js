@@ -114,14 +114,24 @@ const questionSchema = Joi.object({
 
 const createFormSchema = Joi.object({
   tenant: Joi.string().required(),
-  submission_type: Joi.string().valid("FOUND", "NOT_FOUND").required(),
+  submission_type: Joi.string()
+    .when("form_type", {
+      is: "submission",
+      then: Joi.valid("FOUND", "NOT_FOUND").required(),
+      otherwise: Joi.valid("").default(""),
+    }),
   form_type: Joi.string().valid("submission", "new_poi", "additional").required(),
   questions: Joi.array().items(questionSchema).min(1).required(),
 });
 
 const updateFormSchema = Joi.object({
   tenant: Joi.string(),
-  submission_type: Joi.string().valid("FOUND", "NOT_FOUND"),
+  submission_type: Joi.string()
+    .when("form_type", {
+      is: "submission",
+      then: Joi.valid("FOUND", "NOT_FOUND").optional(),
+      otherwise: Joi.valid("").default(""),
+    }),
   form_type: Joi.string().valid("submission", "new_poi", "additional"),
   questions: Joi.array().items(questionSchema).min(1),
 });

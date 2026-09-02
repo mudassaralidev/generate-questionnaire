@@ -6,6 +6,7 @@ const {
 const {
   normalizeConfigMeta,
   stripLegacyMetaFields,
+  requiresSubmissionType,
 } = require("../utils/formMeta");
 
 const list = async ({ tenant, submission_type, form_type } = {}) => {
@@ -25,23 +26,25 @@ const getById = async (id) => {
 
 const resolve = async ({ tenant, submission_type, form_type }) => {
   const type = "form_questions";
+  const filter = { tenant, form_type, type };
 
-  let doc = await TenantConfiguration.findOne({
+  if (requiresSubmissionType(form_type)) {
+    filter.submission_type = submission_type;
+  } else {
+    filter.submission_type = "";
+  }
+
+  let doc = await TenantConfiguration.findOne(filter).lean();
+
+  const stub = {
     tenant,
-    submission_type,
     form_type,
-    type,
-  }).lean();
+    submission_type: requiresSubmissionType(form_type) ? submission_type : "",
+  };
 
   return {
     mode: doc ? "edit" : "create",
-    config: normalizeConfigMeta(
-      doc || {
-        tenant,
-        submission_type,
-        form_type,
-      },
-    ),
+    config: normalizeConfigMeta(doc || stub),
   };
 };
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { createContext, useContext, useReducer, useCallback } from "react";
 import {
   generateId,
   reindexOrders,
@@ -7,16 +7,15 @@ import {
   createQuestionSnapshot,
   deepClone,
   duplicateQuestionWithNewIds,
-} from '../utils/helpers';
-import { splitQuestionsByDependency } from '../utils/questionUtils';
-import { normalizeFormMeta } from '../constants/formMeta';
+} from "../utils/helpers";
+import { splitQuestionsByDependency } from "../utils/questionUtils";
 
 const BuilderContext = createContext(null);
 
 const initialState = {
-  meta: { tenant: '', submission_type: '', form_type: '' },
+  meta: { tenant: "", submission_type: "", form_type: "" },
   configId: null,
-  mode: 'create',
+  mode: "create",
   questions: [],
   selectedQuestionId: null,
 };
@@ -25,9 +24,9 @@ function createQuestionPayload(state, overrides = {}) {
   const isIndependent = overrides.is_independent !== false;
   const newQ = {
     _id: generateId(),
-    description: '',
-    type: 'text',
-    answer_key: '',
+    description: "",
+    type: "text",
+    answer_key: "",
     parent_question_ids: [],
     parent_option_ids: [],
     order: state.questions.length + 1,
@@ -64,26 +63,25 @@ function placeQuestionInSections(updated, remaining) {
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'LOAD_CONFIG': {
+    case "LOAD_CONFIG": {
       const { config, mode } = action.payload;
       return {
         ...state,
         configId: config?._id || null,
         mode,
         meta: config
-          ? normalizeFormMeta({
+          ? {
               tenant: config.tenant,
-              submission_type: config.submission_type,
+              submission_type: config.submission_type ?? "",
               form_type: config.form_type,
-              questions_type: config.questions_type,
-            })
+            }
           : state.meta,
         questions: normalizeQuestionsOnLoad(config?.questions || []),
         selectedQuestionId: null,
       };
     }
 
-    case 'ADD_QUESTION': {
+    case "ADD_QUESTION": {
       const newQ = createQuestionPayload(state, action.payload);
       return {
         ...state,
@@ -92,7 +90,7 @@ function reducer(state, action) {
       };
     }
 
-    case 'DUPLICATE_QUESTION': {
+    case "DUPLICATE_QUESTION": {
       const src = state.questions.find((q) => q._id === action.payload);
       if (!src) return state;
 
@@ -106,26 +104,36 @@ function reducer(state, action) {
       };
     }
 
-    case 'DELETE_QUESTION': {
+    case "DELETE_QUESTION": {
       const remaining = state.questions.filter((q) => q._id !== action.payload);
       const cleaned = remaining.map((q) => ({
         ...q,
         parent_question_ids: (q.parent_question_ids || []).filter(
-          (id) => String(id) !== String(action.payload)
+          (id) => String(id) !== String(action.payload),
         ),
         parent_option_ids: (q.parent_option_ids || []).filter((oid) => {
-          const deletedQ = state.questions.find((x) => x._id === action.payload);
-          const deletedOptionIds = (deletedQ?.options || []).map((o) => String(o._id));
+          const deletedQ = state.questions.find(
+            (x) => x._id === action.payload,
+          );
+          const deletedOptionIds = (deletedQ?.options || []).map((o) =>
+            String(o._id),
+          );
           return !deletedOptionIds.includes(String(oid));
         }),
         _stashedDependencies: q._stashedDependencies
           ? {
-              parent_question_ids: (q._stashedDependencies.parent_question_ids || []).filter(
-                (id) => String(id) !== String(action.payload)
-              ),
-              parent_option_ids: (q._stashedDependencies.parent_option_ids || []).filter((oid) => {
-                const deletedQ = state.questions.find((x) => x._id === action.payload);
-                const deletedOptionIds = (deletedQ?.options || []).map((o) => String(o._id));
+              parent_question_ids: (
+                q._stashedDependencies.parent_question_ids || []
+              ).filter((id) => String(id) !== String(action.payload)),
+              parent_option_ids: (
+                q._stashedDependencies.parent_option_ids || []
+              ).filter((oid) => {
+                const deletedQ = state.questions.find(
+                  (x) => x._id === action.payload,
+                );
+                const deletedOptionIds = (deletedQ?.options || []).map((o) =>
+                  String(o._id),
+                );
                 return !deletedOptionIds.includes(String(oid));
               }),
             }
@@ -136,16 +144,20 @@ function reducer(state, action) {
         ...state,
         questions: reindexOrders(cleaned),
         selectedQuestionId:
-          state.selectedQuestionId === action.payload ? null : state.selectedQuestionId,
+          state.selectedQuestionId === action.payload
+            ? null
+            : state.selectedQuestionId,
       };
     }
 
-    case 'REORDER_SECTION': {
+    case "REORDER_SECTION": {
       const { section, items } = action.payload;
-      const { independent, dependent } = splitQuestionsByDependency(state.questions);
+      const { independent, dependent } = splitQuestionsByDependency(
+        state.questions,
+      );
 
-      const nextIndependent = section === 'independent' ? items : independent;
-      const nextDependent = section === 'dependent' ? items : dependent;
+      const nextIndependent = section === "independent" ? items : independent;
+      const nextDependent = section === "dependent" ? items : dependent;
 
       return {
         ...state,
@@ -153,7 +165,7 @@ function reducer(state, action) {
       };
     }
 
-    case 'UPDATE_QUESTION': {
+    case "UPDATE_QUESTION": {
       const payload = action.payload;
       const current = state.questions.find((q) => q._id === payload._id);
       if (!current) return state;
@@ -218,7 +230,7 @@ function reducer(state, action) {
       };
     }
 
-    case 'RESET_QUESTION': {
+    case "RESET_QUESTION": {
       const id = action.payload;
       const current = state.questions.find((q) => q._id === id);
       if (!current?._original) return state;
@@ -240,7 +252,9 @@ function reducer(state, action) {
       };
 
       // Independent flag changed — place into the correct section while keeping order
-      if (Boolean(current.is_independent) !== Boolean(restored.is_independent)) {
+      if (
+        Boolean(current.is_independent) !== Boolean(restored.is_independent)
+      ) {
         const remaining = state.questions.filter((q) => q._id !== id);
         return {
           ...state,
@@ -249,18 +263,21 @@ function reducer(state, action) {
       }
 
       // Same section — replace in place and keep relative order within the section
-      const updatedList = state.questions.map((q) => (q._id === id ? restored : q));
-      const { independent, dependent } = splitQuestionsByDependency(updatedList);
+      const updatedList = state.questions.map((q) =>
+        q._id === id ? restored : q,
+      );
+      const { independent, dependent } =
+        splitQuestionsByDependency(updatedList);
       return {
         ...state,
         questions: mergeAndReindexQuestions(independent, dependent),
       };
     }
 
-    case 'SELECT_QUESTION':
+    case "SELECT_QUESTION":
       return { ...state, selectedQuestionId: action.payload };
 
-    case 'RESET':
+    case "RESET":
       return { ...initialState };
 
     default:
@@ -272,38 +289,40 @@ export function BuilderProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const loadConfig = useCallback(
-    (config, mode) => dispatch({ type: 'LOAD_CONFIG', payload: { config, mode } }),
-    []
+    (config, mode) =>
+      dispatch({ type: "LOAD_CONFIG", payload: { config, mode } }),
+    [],
   );
   const addQuestion = useCallback(
-    (data) => dispatch({ type: 'ADD_QUESTION', payload: data }),
-    []
+    (data) => dispatch({ type: "ADD_QUESTION", payload: data }),
+    [],
   );
   const duplicateQuestion = useCallback(
-    (id) => dispatch({ type: 'DUPLICATE_QUESTION', payload: id }),
-    []
+    (id) => dispatch({ type: "DUPLICATE_QUESTION", payload: id }),
+    [],
   );
   const deleteQuestion = useCallback(
-    (id) => dispatch({ type: 'DELETE_QUESTION', payload: id }),
-    []
+    (id) => dispatch({ type: "DELETE_QUESTION", payload: id }),
+    [],
   );
   const reorderSection = useCallback(
-    (section, items) => dispatch({ type: 'REORDER_SECTION', payload: { section, items } }),
-    []
+    (section, items) =>
+      dispatch({ type: "REORDER_SECTION", payload: { section, items } }),
+    [],
   );
   const updateQuestion = useCallback(
-    (q) => dispatch({ type: 'UPDATE_QUESTION', payload: q }),
-    []
+    (q) => dispatch({ type: "UPDATE_QUESTION", payload: q }),
+    [],
   );
   const resetQuestion = useCallback(
-    (id) => dispatch({ type: 'RESET_QUESTION', payload: id }),
-    []
+    (id) => dispatch({ type: "RESET_QUESTION", payload: id }),
+    [],
   );
   const selectQuestion = useCallback(
-    (id) => dispatch({ type: 'SELECT_QUESTION', payload: id }),
-    []
+    (id) => dispatch({ type: "SELECT_QUESTION", payload: id }),
+    [],
   );
-  const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
+  const reset = useCallback(() => dispatch({ type: "RESET" }), []);
 
   return (
     <BuilderContext.Provider
@@ -327,6 +346,6 @@ export function BuilderProvider({ children }) {
 
 export const useBuilder = () => {
   const ctx = useContext(BuilderContext);
-  if (!ctx) throw new Error('useBuilder must be inside BuilderProvider');
+  if (!ctx) throw new Error("useBuilder must be inside BuilderProvider");
   return ctx;
 };

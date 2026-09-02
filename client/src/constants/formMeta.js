@@ -9,24 +9,28 @@ export const FORM_TYPES = [
   { value: "additional", label: "Additional" },
 ];
 
-const SUBMISSION_TYPE_VALUES = SUBMISSION_TYPES.map((item) => item.value);
+export const SUBMISSION_FORM_TYPE = "submission";
 
-/** Map legacy config meta (questions_type + old form_type) → new shape */
-export function normalizeFormMeta(meta = {}) {
-  const out = { ...meta };
+export function requiresSubmissionType(formType) {
+  return formType === SUBMISSION_FORM_TYPE;
+}
 
-  if (!out.submission_type && out.questions_type) {
-    if (SUBMISSION_TYPE_VALUES.includes(out.form_type)) {
-      out.submission_type = out.form_type;
-      out.form_type = out.questions_type;
-    } else if (SUBMISSION_TYPE_VALUES.includes(out.questions_type)) {
-      out.submission_type = out.questions_type;
-      out.form_type = out.form_type || "submission";
-    } else {
-      out.submission_type = out.questions_type;
-    }
-  }
-
-  delete out.questions_type;
+export function normalizeMetaForStorage(meta = {}) {
+  const out = {
+    tenant: meta.tenant,
+    form_type: meta.form_type,
+    submission_type: requiresSubmissionType(meta.form_type)
+      ? meta.submission_type
+      : "",
+  };
   return out;
 }
+
+export function buildConfigPayloadForSave(meta, questions) {
+  return {
+    ...normalizeMetaForStorage(meta),
+    questions,
+  };
+}
+
+const SUBMISSION_TYPE_VALUES = SUBMISSION_TYPES.map((item) => item.value);

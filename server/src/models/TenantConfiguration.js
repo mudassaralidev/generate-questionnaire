@@ -60,7 +60,7 @@ const TenantConfigurationSchema = new Schema(
   {
     tenant: { type: String, required: true, index: true },
     type: { type: String, default: 'form_questions' },
-    submission_type: { type: String, required: true },
+    submission_type: { type: String, default: "" },
     form_type: { type: String, required: true },
     questions: [QuestionSchema],
   },
