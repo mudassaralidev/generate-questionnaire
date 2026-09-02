@@ -14,7 +14,7 @@ export default function DependencyBuilder({ question, onChange }) {
 
   const selectedOptionIds = (question.parent_option_ids || []).map(String);
 
-  const toggleParentOption = (optionId, questionId) => {
+  const toggleParentOption = (optionId) => {
     const currentOptions = (question.parent_option_ids || []).map(String);
     const isSelected = currentOptions.includes(String(optionId));
 
@@ -69,7 +69,7 @@ export default function DependencyBuilder({ question, onChange }) {
                     <input
                       type="checkbox"
                       checked={selectedOptionIds.includes(String(opt._id))}
-                      onChange={() => toggleParentOption(opt._id, pq._id)}
+                      onChange={() => toggleParentOption(opt._id)}
                       className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">

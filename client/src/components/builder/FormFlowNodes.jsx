@@ -133,9 +133,9 @@ function FlowImageNodeComponent({ data }) {
   );
 }
 
-export const FlowQuestionNode = memo(FlowQuestionNodeComponent);
-export const FlowOptionNode = memo(FlowOptionNodeComponent);
-export const FlowImageNode = memo(FlowImageNodeComponent);
+const FlowQuestionNode = memo(FlowQuestionNodeComponent);
+const FlowOptionNode = memo(FlowOptionNodeComponent);
+const FlowImageNode = memo(FlowImageNodeComponent);
 
 export const formFlowNodeTypes = {
   flowQuestion: FlowQuestionNode,

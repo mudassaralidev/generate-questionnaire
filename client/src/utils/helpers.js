@@ -31,7 +31,7 @@ export const isObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id || ''));
 export const reindexOrders = (items) =>
   items.map((item, i) => ({ ...item, order: i + 1 }));
 
-export const hasDependencies = (q) =>
+const hasDependencies = (q) =>
   (q.parent_question_ids?.length > 0) || (q.parent_option_ids?.length > 0);
 
 export const deepClone = (value) => JSON.parse(JSON.stringify(value));
@@ -105,7 +105,7 @@ export const duplicateQuestionWithNewIds = (src) => {
 };
 
 /** Normalize a question loaded from API for client-side editing */
-export const normalizeQuestionOnLoad = (q) => {
+const normalizeQuestionOnLoad = (q) => {
   const independent = !hasDependencies(q);
   const normalized = {
     ...q,

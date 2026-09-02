@@ -129,7 +129,4 @@ const updateFormSchema = Joi.object({
 module.exports = {
   createFormSchema,
   updateFormSchema,
-  questionValidationsSchema,
-  imageValidationsSchema,
-  dynamicImageValidationsSchema,
 };

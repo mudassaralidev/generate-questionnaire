@@ -2,7 +2,7 @@ import dagre from 'dagre';
 
 const OPTION_TYPES = new Set(['radio', 'checkbox', 'dropdown']);
 
-export const FLOW_NODE_TYPES = {
+const FLOW_NODE_TYPES = {
   question: 'flowQuestion',
   option: 'flowOption',
   image: 'flowImage',
@@ -49,16 +49,16 @@ const VALIDATION_LABELS = {
 const sortByOrder = (items = []) =>
   [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-export const getQuestionTitle = (question) => {
+const getQuestionTitle = (question) => {
   const description = String(question?.description || '').trim();
   if (description) return description;
   const key = String(question?.answer_key || '').trim();
   return key || 'Untitled question';
 };
 
-export const getTypeLabel = (type) => TYPE_LABELS[type] || type || 'Unknown';
+const getTypeLabel = (type) => TYPE_LABELS[type] || type || 'Unknown';
 
-export const formatValidationSummary = (validations = {}) => {
+const formatValidationSummary = (validations = {}) => {
   const parts = [];
 
   if (validations.required) {
@@ -80,7 +80,7 @@ export const formatValidationSummary = (validations = {}) => {
 };
 
 /** Custom error text stored as `{rule}_error` fields */
-export const formatValidationErrorMessages = (validations = {}) => {
+const formatValidationErrorMessages = (validations = {}) => {
   const results = [];
 
   for (const [key, value] of Object.entries(validations)) {
@@ -281,7 +281,7 @@ export function countFormFlowPreviewStats(tree = []) {
  * Expand questions into a flat graph for legacy React Flow previews.
  * Questions with multiple parent options are duplicated under each branch.
  */
-export function buildFormFlowGraph(questions = []) {
+function buildFormFlowGraph(questions = []) {
   const nodes = [];
   const edges = [];
   const childrenByOptionId = buildChildrenByOptionId(questions);
@@ -409,7 +409,7 @@ export function buildFormFlowGraph(questions = []) {
   return { nodes, edges };
 }
 
-export function layoutFormFlowGraph(nodes, edges, direction = 'TB') {
+function layoutFormFlowGraph(nodes, edges, direction = 'TB') {
   if (!nodes.length) return nodes;
 
   const g = new dagre.graphlib.Graph();

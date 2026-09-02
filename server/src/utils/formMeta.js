@@ -1,5 +1,4 @@
 const SUBMISSION_TYPE_VALUES = ["FOUND", "NOT_FOUND"];
-const FORM_TYPE_VALUES = ["submission", "new_poi", "additional"];
 
 /** Map legacy stored meta → submission_type + form_type */
 function normalizeConfigMeta(doc) {
@@ -30,8 +29,6 @@ function stripLegacyMetaFields(data = {}) {
 }
 
 module.exports = {
-  SUBMISSION_TYPE_VALUES,
-  FORM_TYPE_VALUES,
   normalizeConfigMeta,
   stripLegacyMetaFields,
 };

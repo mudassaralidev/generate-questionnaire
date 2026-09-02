@@ -9,8 +9,7 @@ export const FORM_TYPES = [
   { value: "additional", label: "Additional" },
 ];
 
-export const SUBMISSION_TYPE_VALUES = SUBMISSION_TYPES.map((item) => item.value);
-export const FORM_TYPE_VALUES = FORM_TYPES.map((item) => item.value);
+const SUBMISSION_TYPE_VALUES = SUBMISSION_TYPES.map((item) => item.value);
 
 /** Map legacy config meta (questions_type + old form_type) → new shape */
 export function normalizeFormMeta(meta = {}) {

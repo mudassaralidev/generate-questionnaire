@@ -85,7 +85,6 @@ const update = async (id, data) => {
 const remove = async (id) => {
   const doc = await TenantConfiguration.findByIdAndDelete(id);
   if (!doc) throw new ApiError(404, "Form configuration not found");
-  return normalizeConfigMeta(doc.toObject());
 };
 
 module.exports = { list, getById, resolve, create, update, remove };

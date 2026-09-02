@@ -83,9 +83,6 @@ function reducer(state, action) {
       };
     }
 
-    case 'SET_META':
-      return { ...state, meta: { ...state.meta, ...action.payload } };
-
     case 'ADD_QUESTION': {
       const newQ = createQuestionPayload(state, action.payload);
       return {
@@ -278,7 +275,6 @@ export function BuilderProvider({ children }) {
     (config, mode) => dispatch({ type: 'LOAD_CONFIG', payload: { config, mode } }),
     []
   );
-  const setMeta = useCallback((meta) => dispatch({ type: 'SET_META', payload: meta }), []);
   const addQuestion = useCallback(
     (data) => dispatch({ type: 'ADD_QUESTION', payload: data }),
     []
@@ -314,7 +310,6 @@ export function BuilderProvider({ children }) {
       value={{
         ...state,
         loadConfig,
-        setMeta,
         addQuestion,
         duplicateQuestion,
         deleteQuestion,

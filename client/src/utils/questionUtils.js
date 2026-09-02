@@ -1,7 +1,5 @@
 export const isIndependentQuestion = (q) => q.is_independent === true;
 
-export const isDependentQuestion = (q) => !isIndependentQuestion(q);
-
 export const splitQuestionsByDependency = (questions) => {
   const independent = [];
   const dependent = [];

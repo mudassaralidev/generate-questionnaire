@@ -1,6 +1,5 @@
 /**
  * Build human-readable dependency labels for a dependent question.
- * Returns entries like "parent_key → option_value".
  */
 export function getDependencyLabels(question, allQuestions = []) {
   const parentOptionIds = (question.parent_option_ids || []).map(String);
@@ -16,9 +15,7 @@ export function getDependencyLabels(question, allQuestions = []) {
       );
       if (!option) continue;
 
-      // const parentKey = parent.answer_key || 'Untitled';
       const optionKey = option.value || option.label || optionId;
-      // labels.push(`${parentKey} → ${optionKey}`);
       labels.push(optionKey);
       break;
     }
