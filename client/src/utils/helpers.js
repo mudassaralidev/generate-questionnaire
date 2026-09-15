@@ -1,11 +1,11 @@
-import { splitQuestionsByDependency } from './questionUtils';
+import { splitQuestionsByDependency } from "./questionUtils";
 import {
   migrateValidationsOnLoad,
   migrateImageOnLoad,
   normalizeValidationsForSave,
   normalizeImageForSave,
   defaultValidations,
-} from './validationUtils';
+} from "./validationUtils";
 
 let counter = 0;
 
@@ -16,23 +16,23 @@ let counter = 0;
 export const generateId = () => {
   const timestamp = Math.floor(Date.now() / 1000)
     .toString(16)
-    .padStart(8, '0');
+    .padStart(8, "0");
   const random = Array.from({ length: 16 }, () =>
-    Math.floor(Math.random() * 16).toString(16)
-  ).join('');
+    Math.floor(Math.random() * 16).toString(16),
+  ).join("");
   counter = (counter + 1) % 0xffffff;
-  const suffix = counter.toString(16).padStart(6, '0');
+  const suffix = counter.toString(16).padStart(6, "0");
   return (timestamp + random).slice(0, 18) + suffix;
 };
 
-export const isObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id || ''));
+export const isObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id || ""));
 
 /** Reassign order fields starting from 1 */
 export const reindexOrders = (items) =>
   items.map((item, i) => ({ ...item, order: i + 1 }));
 
 const hasDependencies = (q) =>
-  (q.parent_question_ids?.length > 0) || (q.parent_option_ids?.length > 0);
+  q.parent_question_ids?.length > 0 || q.parent_option_ids?.length > 0;
 
 export const deepClone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -50,7 +50,7 @@ const ensureNestedIds = (items = []) =>
     items.map((item) => ({
       ...item,
       _id: isObjectId(item._id) ? String(item._id) : generateId(),
-    }))
+    })),
   );
 
 /**
@@ -62,24 +62,24 @@ export const duplicateQuestionWithNewIds = (src) => {
   const dup = {
     ...deepClone(src),
     _id: generateId(),
-    answer_key: `${src.answer_key || 'question'}_copy`,
+    answer_key: `${src.answer_key || "question"}_copy`,
     options: reindexOrders(
       (src.options || []).map((o) => ({
         ...deepClone(o),
         _id: generateId(),
-      }))
+      })),
     ),
     images: reindexOrders(
       (src.images || []).map((img) => ({
         ...deepClone(img),
         _id: generateId(),
-      }))
+      })),
     ),
     dynamic_images: reindexOrders(
       (src.dynamic_images || []).map((img) => ({
         ...deepClone(img),
         _id: generateId(),
-      }))
+      })),
     ),
     _resetVersion: 0,
   };
@@ -120,14 +120,28 @@ const normalizeQuestionOnLoad = (q) => {
           parent_option_ids: (q.parent_option_ids || []).map(String),
         },
     options: ensureNestedIds(q.options || []),
-    images: reindexOrders((q.images || []).map((img) => migrateImageOnLoad({
-      ...img,
-      _id: isObjectId(img._id) ? String(img._id) : generateId(),
-    }, { dynamic: false }))),
-    dynamic_images: reindexOrders((q.dynamic_images || []).map((img) => migrateImageOnLoad({
-      ...img,
-      _id: isObjectId(img._id) ? String(img._id) : generateId(),
-    }, { dynamic: true }))),
+    images: reindexOrders(
+      (q.images || []).map((img) =>
+        migrateImageOnLoad(
+          {
+            ...img,
+            _id: isObjectId(img._id) ? String(img._id) : generateId(),
+          },
+          { dynamic: false },
+        ),
+      ),
+    ),
+    dynamic_images: reindexOrders(
+      (q.dynamic_images || []).map((img) =>
+        migrateImageOnLoad(
+          {
+            ...img,
+            _id: isObjectId(img._id) ? String(img._id) : generateId(),
+          },
+          { dynamic: true },
+        ),
+      ),
+    ),
     validations: migrateValidationsOnLoad(q.validations || { required: false }),
     _resetVersion: 0,
   };
@@ -161,7 +175,7 @@ export const cleanQuestionsForSave = (questions) => {
   const idMap = new Map();
 
   const ensureObjectId = (id) => {
-    if (id == null || id === '') return generateId();
+    if (id == null || id === "") return generateId();
     const key = String(id);
     if (isObjectId(key)) return key;
     if (!idMap.has(key)) idMap.set(key, generateId());
@@ -176,12 +190,13 @@ export const cleanQuestionsForSave = (questions) => {
     for (const img of q.dynamic_images || []) ensureObjectId(img._id);
   }
 
-  const isImageQuestionType = (type) => type === 'image' || type === 'dynamic_images';
+  const isImageQuestionType = (type) =>
+    type === "image" || type === "dynamic_images";
 
   return ordered.map((q) => {
     const out = {
       _id: ensureObjectId(q._id),
-      description: q.description || '',
+      description: q.description || "",
       type: q.type,
       answer_key: q.answer_key,
       order: q.order,
@@ -196,7 +211,9 @@ export const cleanQuestionsForSave = (questions) => {
     };
 
     if (!q.is_independent) {
-      out.parent_question_ids = (q.parent_question_ids || []).map(ensureObjectId);
+      out.parent_question_ids = (q.parent_question_ids || []).map(
+        ensureObjectId,
+      );
       out.parent_option_ids = (q.parent_option_ids || []).map(ensureObjectId);
     }
 
@@ -206,7 +223,7 @@ export const cleanQuestionsForSave = (questions) => {
         label: o.label,
         value: o.value,
         order: o.order,
-      }))
+      })),
     );
 
     out.images = reindexOrders(
@@ -215,7 +232,7 @@ export const cleanQuestionsForSave = (questions) => {
           ...img,
           _id: ensureObjectId(img._id),
         }),
-      }))
+      })),
     );
 
     out.dynamic_images = reindexOrders(
@@ -227,7 +244,7 @@ export const cleanQuestionsForSave = (questions) => {
           },
           { dynamic: true },
         ),
-      }))
+      })),
     );
 
     return out;

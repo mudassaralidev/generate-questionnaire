@@ -4,8 +4,8 @@ export const defaultValidations = () => ({ required: false });
 
 export const defaultImageValidation = () => ({ required: false });
 
-export const IMAGE_VALIDATIONS_KEY = 'image_validations';
-export const DYNAMIC_IMAGE_VALIDATIONS_KEY = 'dynamic_image_validations';
+export const IMAGE_VALIDATIONS_KEY = "image_validations";
+export const DYNAMIC_IMAGE_VALIDATIONS_KEY = "dynamic_image_validations";
 
 export function getImageValidationsFieldName(dynamic = false) {
   return dynamic ? DYNAMIC_IMAGE_VALIDATIONS_KEY : IMAGE_VALIDATIONS_KEY;
@@ -15,11 +15,11 @@ export function errorKeyForRule(ruleKey) {
   return `${ruleKey}_error`;
 }
 
-const LEGACY_MESSAGE_CONTAINER_KEYS = ['error_messages', 'messages'];
+const LEGACY_MESSAGE_CONTAINER_KEYS = ["error_messages", "messages"];
 
 const LEGACY_IMAGE_VALIDATION_KEYS = [
-  'image_validation',
-  'validations',
+  "image_validation",
+  "validations",
   IMAGE_VALIDATIONS_KEY,
   DYNAMIC_IMAGE_VALIDATIONS_KEY,
 ];
@@ -27,7 +27,7 @@ const LEGACY_IMAGE_VALIDATION_KEYS = [
 function migrateLegacyMessageFields(out) {
   for (const containerKey of LEGACY_MESSAGE_CONTAINER_KEYS) {
     const legacy = out[containerKey];
-    if (!legacy || typeof legacy !== 'object') continue;
+    if (!legacy || typeof legacy !== "object") continue;
 
     for (const [ruleKey, value] of Object.entries(legacy)) {
       const errorKey = errorKeyForRule(ruleKey);
@@ -37,8 +37,8 @@ function migrateLegacyMessageFields(out) {
   }
 
   for (const key of Object.keys(out)) {
-    if (!key.endsWith('_message')) continue;
-    const ruleKey = key.slice(0, -'_message'.length);
+    if (!key.endsWith("_message")) continue;
+    const ruleKey = key.slice(0, -"_message".length);
     const errorKey = errorKeyForRule(ruleKey);
     if (!out[errorKey]) out[errorKey] = out[key];
     delete out[key];
@@ -53,12 +53,12 @@ export function migrateValidationsOnLoad(validations = {}) {
 }
 
 const POSITIVE_VALIDATION_KEYS = [
-  'min_length',
-  'max_length',
-  'min_selections',
-  'max_selections',
-  'min_images',
-  'max_images',
+  "min_length",
+  "max_length",
+  "min_selections",
+  "max_selections",
+  "min_images",
+  "max_images",
 ];
 
 /** Trim custom `{rule}_error` fields before persisting */
@@ -70,14 +70,14 @@ export function normalizeValidationsForSave(validations = {}) {
   }
 
   for (const key of Object.keys(out)) {
-    if (!key.endsWith('_error')) continue;
-    const trimmed = String(out[key] ?? '').trim();
+    if (!key.endsWith("_error")) continue;
+    const trimmed = String(out[key] ?? "").trim();
     if (trimmed) out[key] = trimmed;
     else delete out[key];
   }
 
   for (const key of Object.keys(out)) {
-    if (key.endsWith('_message')) delete out[key];
+    if (key.endsWith("_message")) delete out[key];
   }
 
   for (const containerKey of LEGACY_MESSAGE_CONTAINER_KEYS) {
@@ -119,8 +119,8 @@ function readLegacyImageValidations(img = {}, dynamic = false) {
 
   for (const key of [
     primaryKey,
-    'image_validation',
-    'validations',
+    "image_validation",
+    "validations",
     dynamic ? IMAGE_VALIDATIONS_KEY : DYNAMIC_IMAGE_VALIDATIONS_KEY,
   ]) {
     if (img[key] != null) return img[key];
@@ -134,32 +134,17 @@ export function migrateImageOnLoad(img = {}, { dynamic = false } = {}) {
   const out = { ...img };
   const validationKey = getImageValidationsFieldName(dynamic);
 
-  let validations = migrateValidationsOnLoad(readLegacyImageValidations(out, dynamic));
-
-  if (out.required !== undefined || out.required_message || out.required_error) {
-    const requiredError = out.required_error || out.required_message;
-    validations = {
-      ...validations,
-      required: Boolean(out.required ?? validations.required),
-      ...(requiredError && !validations.required_error
-        ? { required_error: requiredError }
-        : {}),
-    };
-  }
-
-  out[validationKey] = validations;
-
-  for (const legacyKey of LEGACY_IMAGE_VALIDATION_KEYS) {
-    delete out[legacyKey];
-  }
-  delete out.required;
-  delete out.required_message;
-  delete out.required_error;
+  let validations = migrateValidationsOnLoad(
+    readLegacyImageValidations(out, dynamic),
+  );
 
   return out;
 }
 
-export function getImageValidationsFromSlot(img = {}, { dynamic = false } = {}) {
+export function getImageValidationsFromSlot(
+  img = {},
+  { dynamic = false } = {},
+) {
   const validationKey = getImageValidationsFieldName(dynamic);
   return img[validationKey] || readLegacyImageValidations(img, dynamic);
 }
@@ -173,7 +158,7 @@ export function normalizeImageForSave(img, { dynamic = false } = {}) {
   return {
     _id: img._id,
     key: img.key,
-    title: img.title || '',
+    title: img.title || "",
     order: img.order,
     [validationKey]: normalizeValidation(
       getImageValidationsFromSlot(img, { dynamic }),

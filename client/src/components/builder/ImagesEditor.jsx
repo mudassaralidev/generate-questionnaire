@@ -139,7 +139,11 @@ export default function ImagesEditor({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <span className="label mb-0">{listLabel}</span>
-        <button type="button" onClick={add} className="btn-secondary py-1 text-xs">
+        <button
+          type="button"
+          onClick={add}
+          className="btn-secondary py-1 text-xs"
+        >
           {addLabel}
         </button>
       </div>
