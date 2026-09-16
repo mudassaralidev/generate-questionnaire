@@ -12,6 +12,7 @@ const QUESTION_TYPES = [
   { value: "text", label: "Text" },
   { value: "textarea", label: "Textarea" },
   { value: "number", label: "Number" },
+  { value: "phone_number", label: "PhoneNumber" },
   { value: "date", label: "Date" },
   { value: "image", label: "Image" },
   { value: "dynamic_images", label: "Dynamic Images" },

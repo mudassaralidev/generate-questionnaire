@@ -1,4 +1,4 @@
-const { Schema, model, Types } = require('mongoose');
+const { Schema, model, Types } = require("mongoose");
 
 const OptionSchema = new Schema({
   label: { type: String, required: true },
@@ -8,7 +8,7 @@ const OptionSchema = new Schema({
 
 const ImageSchema = new Schema({
   key: { type: String, required: true },
-  title: { type: String, default: '' },
+  title: { type: String, default: "" },
   image_validations: {
     type: Schema.Types.Mixed,
     default: { required: false },
@@ -18,7 +18,7 @@ const ImageSchema = new Schema({
 
 const DynamicImageSchema = new Schema({
   key: { type: String, required: true },
-  title: { type: String, default: '' },
+  title: { type: String, default: "" },
   dynamic_image_validations: {
     type: Schema.Types.Mixed,
     default: { required: false },
@@ -27,19 +27,20 @@ const DynamicImageSchema = new Schema({
 });
 
 const QuestionSchema = new Schema({
-  description: { type: String, default: '' },
+  description: { type: String, default: "" },
   type: {
     type: String,
     enum: [
-      'radio',
-      'checkbox',
-      'dropdown',
-      'text',
-      'textarea',
-      'number',
-      'date',
-      'image',
-      'dynamic_images',
+      "radio",
+      "checkbox",
+      "dropdown",
+      "text",
+      "textarea",
+      "number",
+      "phone_number",
+      "date",
+      "image",
+      "dynamic_images",
     ],
     required: true,
   },
@@ -59,20 +60,20 @@ const QuestionSchema = new Schema({
 const TenantConfigurationSchema = new Schema(
   {
     tenant: { type: String, required: true, index: true },
-    type: { type: String, default: 'form_questions' },
+    type: { type: String, default: "form_questions" },
     submission_type: { type: String, default: "" },
     form_type: { type: String, required: true },
     questions: [QuestionSchema],
   },
   {
     timestamps: true,
-    collection: 'validator_tenant_configurations',
-  }
+    collection: "validator_tenant_configurations",
+  },
 );
 
 TenantConfigurationSchema.index(
   { tenant: 1, submission_type: 1, form_type: 1, type: 1 },
-  { unique: true }
+  { unique: true },
 );
 
-module.exports = model('TenantConfiguration', TenantConfigurationSchema);
+module.exports = model("TenantConfiguration", TenantConfigurationSchema);

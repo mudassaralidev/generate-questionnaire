@@ -143,6 +143,15 @@ const VALIDATION_RULES = {
       positiveOnly: true,
     },
   ],
+
+  phone_number: [
+    {
+      key: "country_code",
+      label: "Country Code",
+      type: "text",
+      placeholder: "e.g. +92 for Pakistan",
+    },
+  ],
 };
 
 function getRulesForType(type) {

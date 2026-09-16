@@ -68,21 +68,21 @@ function ImageSlotCard({
       <div className="p-4 space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="label text-sm">Key</label>
-            <input
-              className="input font-mono"
-              placeholder="e.g. not_potential_shop_inside"
-              value={img.key}
-              onChange={(e) => updateField("key", e.target.value)}
-            />
-          </div>
-          <div>
             <label className="label text-sm">Display title</label>
             <input
               className="input"
               placeholder="e.g. Inside Image"
               value={img.title}
               onChange={(e) => updateField("title", e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label text-sm">Key</label>
+            <input
+              className="input font-mono"
+              placeholder="e.g. not_potential_shop_inside"
+              value={img.key}
+              onChange={(e) => updateField("key", e.target.value)}
             />
           </div>
         </div>
