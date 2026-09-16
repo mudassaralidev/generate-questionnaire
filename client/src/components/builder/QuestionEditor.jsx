@@ -137,42 +137,42 @@ export default function QuestionEditor() {
   };
 
   return (
-    <div className="h-full overflow-y-auto" key={editorKey}>
-      <div className="p-5 space-y-5">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-gray-700">
-            Question Editor
-          </h3>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 font-mono">
-              Order #{question.order}
-            </span>
-            {canReset && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="btn-secondary py-1.5 text-xs"
-                title="Reset this question to its last saved values (keeps current order)"
-              >
-                <svg
-                  className="h-3.5 w-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                Reset Question
-              </button>
-            )}
-          </div>
-        </div>
+    <div className="flex h-full flex-col overflow-hidden" key={editorKey}>
+      <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-gray-100 px-5 py-4">
+        <h3 className="text-sm font-semibold text-gray-700">Question Editor</h3>
 
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono font-semibold text-black">
+            Order #{question.order}
+          </span>
+
+          {canReset && (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="btn-secondary py-1.5 text-xs"
+              title="Reset this question to its last saved values (keeps current order)"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              Reset Question
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 space-y-5">
         <div className="grid grid-cols-1 gap-3">
           <div className="rounded-lg border border-gray-200 p-3 bg-gray-50 space-y-3">
             <label className="flex items-center gap-2.5 cursor-pointer">
