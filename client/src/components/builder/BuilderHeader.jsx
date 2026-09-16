@@ -15,7 +15,8 @@ import DeleteQuestionnaireModal from "./DeleteQuestionnaireModal";
 
 export default function BuilderHeader() {
   const navigate = useNavigate();
-  const { meta, configId, mode, questions, reset } = useBuilder();
+  const { meta, configId, mode, questions, reset, commitSavedSnapshots } =
+    useBuilder();
   const {
     createConfig,
     editConfig,
@@ -72,8 +73,14 @@ export default function BuilderHeader() {
     try {
       if (mode === "edit" && configId) {
         await editConfig(configId, payload);
+        commitSavedSnapshots();
       } else {
-        await createConfig(payload);
+        const result = await createConfig(payload);
+        const savedId = result?.data?._id || result?._id;
+        commitSavedSnapshots({
+          mode: "edit",
+          ...(savedId ? { configId: savedId } : {}),
+        });
       }
       setShowFlowModal(false);
       alert("Saved successfully!");

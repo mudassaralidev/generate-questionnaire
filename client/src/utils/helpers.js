@@ -52,6 +52,15 @@ export const createQuestionSnapshot = (q) => {
   return clone;
 };
 
+/** True when the question differs from its last saved/loaded snapshot */
+export const isQuestionDirty = (question) => {
+  if (!question?._original) return false;
+  return (
+    JSON.stringify(createQuestionSnapshot(question)) !==
+    JSON.stringify(question._original)
+  );
+};
+
 const ensureNestedIds = (items = []) =>
   reindexOrders(
     items.map((item) => ({

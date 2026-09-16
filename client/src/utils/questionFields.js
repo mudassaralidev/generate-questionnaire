@@ -25,6 +25,13 @@ export const QUESTION_TYPES = [
 export const EDITABLE_FLAG_TYPES = ["text", "number", "date"];
 export const OPTION_TYPES = ["radio", "checkbox", "dropdown"];
 export const IMAGE_TYPES = ["image", "dynamic_images"];
+export const PLACEHOLDER_TYPES = [
+  "dropdown",
+  "text",
+  "textarea",
+  "number",
+  "phone_number",
+];
 
 /** Scalar fields persisted on each question */
 export const QUESTION_SCALAR_FIELDS = {

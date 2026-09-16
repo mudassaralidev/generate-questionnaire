@@ -1,7 +1,9 @@
 import { useBuilder } from "../../context/BuilderContext";
 import { defaultValidations } from "../../utils/validationUtils";
+import { isQuestionDirty } from "../../utils/helpers";
 import {
   OPTION_TYPES,
+  PLACEHOLDER_TYPES,
   supportsEditableFlag,
   isImageQuestionType,
 } from "../../utils/questionFields";
@@ -46,7 +48,7 @@ function buildValidationsForType(type, currentValidations = {}) {
 }
 
 export default function QuestionEditor() {
-  const { questions, selectedQuestionId, updateQuestion, resetQuestion, mode } =
+  const { questions, selectedQuestionId, updateQuestion, resetQuestion } =
     useBuilder();
   const question = questions.find((q) => q._id === selectedQuestionId);
 
@@ -76,14 +78,12 @@ export default function QuestionEditor() {
   }
 
   const editorKey = `${question._id}-${question._resetVersion || 0}`;
-  const canReset = mode === "edit" && Boolean(question._original);
+  const canReset = Boolean(question._original) && isQuestionDirty(question);
   const isExternalSource = Boolean(question.is_external_source);
 
   const handleFieldChange = (field) => (e) => {
     const val =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
-
-    console.log(field, val);
     updateQuestion({ ...question, [field]: val });
   };
 
@@ -152,7 +152,7 @@ export default function QuestionEditor() {
                 type="button"
                 onClick={handleReset}
                 className="btn-secondary py-1.5 text-xs"
-                title="Reset this question to its previous values (keeps current order)"
+                title="Reset this question to its last saved values (keeps current order)"
               >
                 <svg
                   className="h-3.5 w-3.5"
@@ -270,15 +270,17 @@ export default function QuestionEditor() {
             onBlur={handleFieldChange("description")}
           />
         </div>
-        <div>
-          <label className="label">Placeholder</label>
-          <input
-            className="input"
-            placeholder="Text to display as placeholder"
-            defaultValue={question.placeholder_text || ""}
-            onBlur={handleFieldChange("placeholder_text")}
-          />
-        </div>
+        {PLACEHOLDER_TYPES.includes(question.type) && (
+          <div>
+            <label className="label">Placeholder</label>
+            <input
+              className="input"
+              placeholder="Text to display as placeholder"
+              defaultValue={question.placeholder_text || ""}
+              onBlur={handleFieldChange("placeholder_text")}
+            />
+          </div>
+        )}
 
         {isExternalSource || !isImageQuestionType(question.type) ? (
           <div className="rounded-lg border border-gray-200 p-4">

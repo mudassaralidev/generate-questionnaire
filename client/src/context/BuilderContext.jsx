@@ -264,6 +264,20 @@ function reducer(state, action) {
     case "SELECT_QUESTION":
       return { ...state, selectedQuestionId: action.payload };
 
+    case "COMMIT_SAVED_SNAPSHOTS": {
+      const { configId, mode } = action.payload || {};
+      return {
+        ...state,
+        ...(configId ? { configId } : {}),
+        ...(mode ? { mode } : {}),
+        questions: state.questions.map((q) => ({
+          ...q,
+          _original: createQuestionSnapshot(q),
+          _resetVersion: (q._resetVersion || 0) + 1,
+        })),
+      };
+    }
+
     case "RESET":
       return { ...initialState };
 
@@ -305,6 +319,11 @@ export function BuilderProvider({ children }) {
     (id) => dispatch({ type: "RESET_QUESTION", payload: id }),
     [],
   );
+  const commitSavedSnapshots = useCallback(
+    (payload = {}) =>
+      dispatch({ type: "COMMIT_SAVED_SNAPSHOTS", payload }),
+    [],
+  );
   const selectQuestion = useCallback(
     (id) => dispatch({ type: "SELECT_QUESTION", payload: id }),
     [],
@@ -322,6 +341,7 @@ export function BuilderProvider({ children }) {
         reorderSection,
         updateQuestion,
         resetQuestion,
+        commitSavedSnapshots,
         selectQuestion,
         reset,
       }}
