@@ -26,6 +26,7 @@ const validationErrorFields = {
 
 const questionValidationsSchema = Joi.object({
   required: Joi.boolean(),
+  is_editable: Joi.boolean(),
   min_length: positiveInteger,
   max_length: positiveInteger,
   pattern: Joi.string(),
@@ -91,6 +92,7 @@ const dynamicImageSchema = Joi.object({
 const questionSchema = Joi.object({
   _id: objectId.optional(),
   description: Joi.string().allow("").default(""),
+  placeholder_text: Joi.string().allow("").default(""),
   type: Joi.string()
     .valid(
       "radio",
@@ -106,6 +108,8 @@ const questionSchema = Joi.object({
     )
     .required(),
   answer_key: Joi.string().required(),
+  is_external_source: Joi.boolean().default(false),
+  external_source: Joi.string().allow("").default(""),
   parent_question_ids: Joi.array().items(objectId).default([]),
   parent_option_ids: Joi.array().items(objectId).default([]),
   order: Joi.number().default(1),
@@ -113,7 +117,17 @@ const questionSchema = Joi.object({
   options: Joi.array().items(optionSchema).default([]),
   images: Joi.array().items(imageSchema).default([]),
   dynamic_images: Joi.array().items(dynamicImageSchema).default([]),
-});
+})
+  // Allow new scalar question fields without updating Joi for every addition.
+  .unknown(true)
+  .custom((value, helpers) => {
+    if (value.is_external_source && !String(value.external_source || "").trim()) {
+      return helpers.message(
+        '"external_source" is required when is_external_source is true',
+      );
+    }
+    return value;
+  });
 
 const createFormSchema = Joi.object({
   tenant: Joi.string().required(),

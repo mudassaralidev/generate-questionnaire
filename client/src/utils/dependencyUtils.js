@@ -3,7 +3,8 @@
  */
 export function getDependencyLabels(question, allQuestions = []) {
   const parentOptionIds = (question.parent_option_ids || []).map(String);
-  if (!parentOptionIds.length) return [];
+  const parentQuestionIds = (question.parent_question_ids || []).map(String);
+  if (!parentOptionIds.length && !parentQuestionIds.length) return [];
 
   const questionById = new Map(allQuestions.map((q) => [String(q._id), q]));
   const labels = [];
@@ -21,8 +22,8 @@ export function getDependencyLabels(question, allQuestions = []) {
     }
   }
 
-  // Fallback: parent questions without resolved options
-  for (const parentId of question.parent_question_ids || []) {
+  // Parent questions without resolved options (e.g. external source parents)
+  for (const parentId of parentQuestionIds) {
     const parent = questionById.get(String(parentId));
     if (!parent) continue;
 

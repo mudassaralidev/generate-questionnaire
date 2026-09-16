@@ -6,6 +6,13 @@ import {
   normalizeImageForSave,
   defaultValidations,
 } from "./validationUtils";
+import {
+  applyQuestionScalars,
+  getQuestionScalarDefaults,
+  pickQuestionScalarsForSave,
+  supportsEditableFlag,
+  isImageQuestionType,
+} from "./questionFields";
 
 let counter = 0;
 
@@ -52,6 +59,52 @@ const ensureNestedIds = (items = []) =>
       _id: isObjectId(item._id) ? String(item._id) : generateId(),
     })),
   );
+
+function normalizeValidationsForQuestion(type, validations = {}, { isExternalSource = false } = {}) {
+  let next =
+    isImageQuestionType(type) && !isExternalSource
+      ? defaultValidations()
+      : normalizeValidationsForSave(validations || { required: false });
+
+  if (supportsEditableFlag(type)) {
+    next = {
+      ...next,
+      is_editable:
+        next.is_editable !== undefined ? Boolean(next.is_editable) : true,
+    };
+  } else {
+    delete next.is_editable;
+  }
+
+  return next;
+}
+
+/**
+ * Build a new question object. Scalar defaults come from QUESTION_SCALAR_FIELDS.
+ */
+export const createEmptyQuestion = (overrides = {}) => {
+  const type = overrides.type || getQuestionScalarDefaults().type;
+  const isIndependent = overrides.is_independent !== false;
+
+  return {
+    _id: generateId(),
+    ...getQuestionScalarDefaults(),
+    parent_question_ids: [],
+    parent_option_ids: [],
+    order: 1,
+    is_independent: isIndependent,
+    _stashedDependencies: { parent_question_ids: [], parent_option_ids: [] },
+    validations: normalizeValidationsForQuestion(type, {
+      required: false,
+      ...(supportsEditableFlag(type) ? { is_editable: true } : {}),
+    }),
+    options: [],
+    images: [],
+    dynamic_images: [],
+    _resetVersion: 0,
+    ...overrides,
+  };
+};
 
 /**
  * Clone a question with brand-new ids for the question, options, and images.
@@ -107,10 +160,15 @@ export const duplicateQuestionWithNewIds = (src) => {
 /** Normalize a question loaded from API for client-side editing */
 const normalizeQuestionOnLoad = (q) => {
   const independent = !hasDependencies(q);
+  const scalars = applyQuestionScalars(q);
+  const isExternalSource = Boolean(scalars.is_external_source);
+
   const normalized = {
     ...q,
+    ...scalars,
     _id: isObjectId(q._id) ? String(q._id) : generateId(),
     is_independent: independent,
+    external_source: isExternalSource ? scalars.external_source : "",
     parent_question_ids: (q.parent_question_ids || []).map(String),
     parent_option_ids: (q.parent_option_ids || []).map(String),
     _stashedDependencies: independent
@@ -119,30 +177,38 @@ const normalizeQuestionOnLoad = (q) => {
           parent_question_ids: (q.parent_question_ids || []).map(String),
           parent_option_ids: (q.parent_option_ids || []).map(String),
         },
-    options: ensureNestedIds(q.options || []),
-    images: reindexOrders(
-      (q.images || []).map((img) =>
-        migrateImageOnLoad(
-          {
-            ...img,
-            _id: isObjectId(img._id) ? String(img._id) : generateId(),
-          },
-          { dynamic: false },
+    options: isExternalSource ? [] : ensureNestedIds(q.options || []),
+    images: isExternalSource
+      ? []
+      : reindexOrders(
+          (q.images || []).map((img) =>
+            migrateImageOnLoad(
+              {
+                ...img,
+                _id: isObjectId(img._id) ? String(img._id) : generateId(),
+              },
+              { dynamic: false },
+            ),
+          ),
         ),
-      ),
-    ),
-    dynamic_images: reindexOrders(
-      (q.dynamic_images || []).map((img) =>
-        migrateImageOnLoad(
-          {
-            ...img,
-            _id: isObjectId(img._id) ? String(img._id) : generateId(),
-          },
-          { dynamic: true },
+    dynamic_images: isExternalSource
+      ? []
+      : reindexOrders(
+          (q.dynamic_images || []).map((img) =>
+            migrateImageOnLoad(
+              {
+                ...img,
+                _id: isObjectId(img._id) ? String(img._id) : generateId(),
+              },
+              { dynamic: true },
+            ),
+          ),
         ),
-      ),
+    validations: normalizeValidationsForQuestion(
+      scalars.type,
+      migrateValidationsOnLoad(q.validations || { required: false }),
+      { isExternalSource },
     ),
-    validations: migrateValidationsOnLoad(q.validations || { required: false }),
     _resetVersion: 0,
   };
 
@@ -164,9 +230,7 @@ export const mergeAndReindexQuestions = (independent, dependent) =>
 
 /**
  * Prepare questions for API create/update.
- * - Ensures every question/option/image has a valid ObjectId
- * - Remaps parent_question_ids / parent_option_ids through the same map
- * - Strips client-only fields
+ * Scalar fields come from QUESTION_SCALAR_FIELDS (+ any extra unknown scalars).
  */
 export const cleanQuestionsForSave = (questions) => {
   const { independent, dependent } = splitQuestionsByDependency(questions);
@@ -182,7 +246,6 @@ export const cleanQuestionsForSave = (questions) => {
     return idMap.get(key);
   };
 
-  // Register all entity ids first so parent remaps stay consistent
   for (const q of ordered) {
     ensureObjectId(q._id);
     for (const o of q.options || []) ensureObjectId(o._id);
@@ -190,19 +253,19 @@ export const cleanQuestionsForSave = (questions) => {
     for (const img of q.dynamic_images || []) ensureObjectId(img._id);
   }
 
-  const isImageQuestionType = (type) =>
-    type === "image" || type === "dynamic_images";
-
   return ordered.map((q) => {
+    const isExternalSource = Boolean(q.is_external_source);
+    const scalars = pickQuestionScalarsForSave(q);
+
     const out = {
       _id: ensureObjectId(q._id),
-      description: q.description || "",
-      type: q.type,
-      answer_key: q.answer_key,
+      ...scalars,
       order: q.order,
-      validations: isImageQuestionType(q.type)
-        ? defaultValidations()
-        : normalizeValidationsForSave(q.validations || { required: false }),
+      validations: normalizeValidationsForQuestion(
+        scalars.type,
+        q.validations || { required: false },
+        { isExternalSource },
+      ),
       parent_question_ids: [],
       parent_option_ids: [],
       options: [],
@@ -217,35 +280,37 @@ export const cleanQuestionsForSave = (questions) => {
       out.parent_option_ids = (q.parent_option_ids || []).map(ensureObjectId);
     }
 
-    out.options = reindexOrders(
-      (q.options || []).map((o) => ({
-        _id: ensureObjectId(o._id),
-        label: o.label,
-        value: o.value,
-        order: o.order,
-      })),
-    );
+    if (!isExternalSource) {
+      out.options = reindexOrders(
+        (q.options || []).map((o) => ({
+          _id: ensureObjectId(o._id),
+          label: o.label,
+          value: o.value,
+          order: o.order,
+        })),
+      );
 
-    out.images = reindexOrders(
-      (q.images || []).map((img) => ({
-        ...normalizeImageForSave({
-          ...img,
-          _id: ensureObjectId(img._id),
-        }),
-      })),
-    );
-
-    out.dynamic_images = reindexOrders(
-      (q.dynamic_images || []).map((img) => ({
-        ...normalizeImageForSave(
-          {
+      out.images = reindexOrders(
+        (q.images || []).map((img) => ({
+          ...normalizeImageForSave({
             ...img,
             _id: ensureObjectId(img._id),
-          },
-          { dynamic: true },
-        ),
-      })),
-    );
+          }),
+        })),
+      );
+
+      out.dynamic_images = reindexOrders(
+        (q.dynamic_images || []).map((img) => ({
+          ...normalizeImageForSave(
+            {
+              ...img,
+              _id: ensureObjectId(img._id),
+            },
+            { dynamic: true },
+          ),
+        })),
+      );
+    }
 
     return out;
   });

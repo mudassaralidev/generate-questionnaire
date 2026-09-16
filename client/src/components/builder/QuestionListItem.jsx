@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Badge from '../common/Badge';
-import { isIndependentQuestion } from '../../utils/questionUtils';
+import { isIndependentQuestion, isExternalSourceQuestion } from '../../utils/questionUtils';
 import { getDependencyLabels } from '../../utils/dependencyUtils';
 
 const TYPE_COLORS = {
@@ -72,6 +72,7 @@ export default function QuestionListItem({
         )}
         <div className="mt-1.5 flex flex-wrap gap-1">
           <Badge color={TYPE_COLORS[question.type] || 'gray'}>{question.type}</Badge>
+          {isExternalSourceQuestion(question) && <Badge color="blue">external</Badge>}
           {!isIndependentQuestion(question) && <Badge color="purple">dependent</Badge>}
           {question.validations?.required && <Badge color="red">required</Badge>}
         </div>

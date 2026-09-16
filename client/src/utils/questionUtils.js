@@ -1,5 +1,7 @@
 export const isIndependentQuestion = (q) => q.is_independent === true;
 
+export const isExternalSourceQuestion = (q) => q.is_external_source === true;
+
 export const splitQuestionsByDependency = (questions) => {
   const independent = [];
   const dependent = [];

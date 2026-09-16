@@ -26,36 +26,43 @@ const DynamicImageSchema = new Schema({
   order: { type: Number, default: 1 },
 });
 
-const QuestionSchema = new Schema({
-  description: { type: String, default: "" },
-  type: {
-    type: String,
-    enum: [
-      "radio",
-      "checkbox",
-      "dropdown",
-      "text",
-      "textarea",
-      "number",
-      "phone_number",
-      "date",
-      "image",
-      "dynamic_images",
-    ],
-    required: true,
+const QuestionSchema = new Schema(
+  {
+    description: { type: String, default: "" },
+    placeholder_text: { type: String, default: "" },
+    type: {
+      type: String,
+      enum: [
+        "radio",
+        "checkbox",
+        "dropdown",
+        "text",
+        "textarea",
+        "number",
+        "phone_number",
+        "date",
+        "image",
+        "dynamic_images",
+      ],
+      required: true,
+    },
+    answer_key: { type: String, required: true, trim: true },
+    is_external_source: { type: Boolean, default: false },
+    external_source: { type: String, default: "", trim: true },
+    parent_question_ids: [{ type: Types.ObjectId }],
+    parent_option_ids: [{ type: Types.ObjectId }],
+    order: { type: Number, default: 1 },
+    validations: {
+      type: Schema.Types.Mixed,
+      default: { required: false },
+    },
+    options: [OptionSchema],
+    images: [ImageSchema],
+    dynamic_images: [DynamicImageSchema],
   },
-  answer_key: { type: String, required: true, trim: true },
-  parent_question_ids: [{ type: Types.ObjectId }],
-  parent_option_ids: [{ type: Types.ObjectId }],
-  order: { type: Number, default: 1 },
-  validations: {
-    type: Schema.Types.Mixed,
-    default: { required: false },
-  },
-  options: [OptionSchema],
-  images: [ImageSchema],
-  dynamic_images: [DynamicImageSchema],
-});
+  // Persist newly added scalar fields without updating the schema every time.
+  { strict: false },
+);
 
 const TenantConfigurationSchema = new Schema(
   {

@@ -12,12 +12,18 @@ export function validateFormIntegrity(questions) {
   const answerKeys = new Set();
   const questionOrders = new Set();
   const questionIds = new Set(questions.map((q) => String(q._id)));
+  const questionById = new Map(questions.map((q) => [String(q._id), q]));
 
   for (const q of questions) {
     const qLabel = q.answer_key || String(q._id);
+    const isExternalSource = Boolean(q.is_external_source);
 
     if (!q.answer_key?.trim()) {
       errors.push('Every question must have an answer_key');
+    }
+
+    if (isExternalSource && !String(q.external_source || '').trim()) {
+      errors.push(`"${qLabel}" is an external source and requires External Source Type`);
     }
 
     // Image / dynamic_images questions may share the same answer_key across multiple entries
@@ -31,7 +37,7 @@ export function validateFormIntegrity(questions) {
     if (questionOrders.has(q.order)) errors.push(`Duplicate question order: ${q.order} (${qLabel})`);
     questionOrders.add(q.order);
 
-    if (['radio', 'checkbox', 'dropdown'].includes(q.type)) {
+    if (!isExternalSource && ['radio', 'checkbox', 'dropdown'].includes(q.type)) {
       const optValues = new Set();
       const optOrders = new Set();
       for (const o of q.options || []) {
@@ -44,7 +50,7 @@ export function validateFormIntegrity(questions) {
       }
     }
 
-    if (q.type === 'image') {
+    if (!isExternalSource && q.type === 'image') {
       const imgKeys = new Set();
       const imgOrders = new Set();
       for (const img of q.images || []) {
@@ -56,7 +62,7 @@ export function validateFormIntegrity(questions) {
       }
     }
 
-    if (q.type === 'dynamic_images') {
+    if (!isExternalSource && q.type === 'dynamic_images') {
       const imgKeys = new Set();
       const imgOrders = new Set();
       for (const img of q.dynamic_images || []) {
@@ -71,8 +77,26 @@ export function validateFormIntegrity(questions) {
     if (!q.is_independent) {
       const hasPQ = q.parent_question_ids?.length > 0;
       const hasPO = q.parent_option_ids?.length > 0;
-      if (hasPQ && !hasPO) errors.push(`"${qLabel}" has parent questions but no parent options`);
-      if (hasPO && !hasPQ) errors.push(`"${qLabel}" has parent options but no parent questions`);
+
+      if (!hasPQ && !hasPO) {
+        errors.push(`"${qLabel}" is dependent but has no parent options or external source parents`);
+      }
+
+      if (hasPO && !hasPQ) {
+        errors.push(`"${qLabel}" has parent options but no parent questions`);
+      }
+
+      if (hasPQ && !hasPO) {
+        for (const pqId of q.parent_question_ids) {
+          const parent = questionById.get(String(pqId));
+          if (!parent?.is_external_source) {
+            errors.push(
+              `"${qLabel}" has parent questions without parent options; only external source parents are allowed without options`,
+            );
+            break;
+          }
+        }
+      }
 
       if (hasPQ) {
         for (const pqId of q.parent_question_ids) {

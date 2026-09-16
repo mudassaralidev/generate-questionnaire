@@ -1,5 +1,10 @@
 import { useBuilder } from "../../context/BuilderContext";
 import { defaultValidations } from "../../utils/validationUtils";
+import {
+  OPTION_TYPES,
+  supportsEditableFlag,
+  isImageQuestionType,
+} from "../../utils/questionFields";
 import OptionsEditor from "./OptionsEditor";
 import ImagesEditor from "./ImagesEditor";
 import DependencyBuilder from "./DependencyBuilder";
@@ -18,10 +23,27 @@ const QUESTION_TYPES = [
   { value: "dynamic_images", label: "Dynamic Images" },
 ];
 
-const OPTION_TYPES = ["radio", "checkbox", "dropdown"];
-const IMAGE_TYPES = ["image", "dynamic_images"];
+function buildValidationsForType(type, currentValidations = {}) {
+  if (isImageQuestionType(type)) {
+    return defaultValidations();
+  }
 
-const isImageType = (type) => IMAGE_TYPES.includes(type);
+  const next = {
+    required: currentValidations.required || false,
+    ...(currentValidations.required_error
+      ? { required_error: currentValidations.required_error }
+      : {}),
+  };
+
+  if (supportsEditableFlag(type)) {
+    next.is_editable =
+      currentValidations.is_editable !== undefined
+        ? Boolean(currentValidations.is_editable)
+        : true;
+  }
+
+  return next;
+}
 
 export default function QuestionEditor() {
   const { questions, selectedQuestionId, updateQuestion, resetQuestion, mode } =
@@ -55,15 +77,30 @@ export default function QuestionEditor() {
 
   const editorKey = `${question._id}-${question._resetVersion || 0}`;
   const canReset = mode === "edit" && Boolean(question._original);
+  const isExternalSource = Boolean(question.is_external_source);
 
   const handleFieldChange = (field) => (e) => {
     const val =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
+
+    console.log(field, val);
     updateQuestion({ ...question, [field]: val });
   };
 
   const handleIndependentToggle = (e) => {
     updateQuestion({ ...question, is_independent: e.target.checked });
+  };
+
+  const handleExternalSourceToggle = (e) => {
+    const checked = e.target.checked;
+    updateQuestion({
+      ...question,
+      is_external_source: checked,
+      external_source: checked ? question.external_source || "" : "",
+      options: checked ? [] : question.options || [],
+      images: checked ? [] : question.images || [],
+      dynamic_images: checked ? [] : question.dynamic_images || [],
+    });
   };
 
   const handleValidationsChange = (validations) => {
@@ -92,14 +129,10 @@ export default function QuestionEditor() {
       options: [],
       images: [],
       dynamic_images: [],
-      validations: isImageType(nextType)
-        ? defaultValidations()
-        : {
-            required: question.validations?.required || false,
-            ...(question.validations?.required_error
-              ? { required_error: question.validations.required_error }
-              : {}),
-          },
+      validations: buildValidationsForType(
+        nextType,
+        question.validations || {},
+      ),
     });
   };
 
@@ -159,6 +192,24 @@ export default function QuestionEditor() {
             </p>
           </div>
 
+          <div className="rounded-lg border border-gray-200 p-3 bg-gray-50 space-y-3">
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isExternalSource}
+                onChange={handleExternalSourceToggle}
+                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Is external source?
+              </span>
+            </label>
+            <p className="text-xs text-gray-500">
+              External source questions hide options and images, and can be used
+              as parents for dependent questions.
+            </p>
+          </div>
+
           <div>
             <label className="label">
               Answer Key <span className="text-red-500">*</span>
@@ -185,9 +236,23 @@ export default function QuestionEditor() {
               ))}
             </select>
           </div>
+
+          {isExternalSource && (
+            <div>
+              <label className="label">
+                External Source Type <span className="text-red-500">*</span>
+              </label>
+              <input
+                className="input font-mono"
+                placeholder="e.g. poi_lookup"
+                defaultValue={question.external_source || ""}
+                onBlur={handleFieldChange("external_source")}
+              />
+            </div>
+          )}
         </div>
 
-        {OPTION_TYPES.includes(question.type) && (
+        {!isExternalSource && OPTION_TYPES.includes(question.type) && (
           <div className="rounded-lg border border-gray-200 p-4">
             <OptionsEditor
               options={question.options || []}
@@ -205,8 +270,17 @@ export default function QuestionEditor() {
             onBlur={handleFieldChange("description")}
           />
         </div>
+        <div>
+          <label className="label">Placeholder</label>
+          <input
+            className="input"
+            placeholder="Text to display as placeholder"
+            defaultValue={question.placeholder_text || ""}
+            onBlur={handleFieldChange("placeholder_text")}
+          />
+        </div>
 
-        {!isImageType(question.type) ? (
+        {isExternalSource || !isImageQuestionType(question.type) ? (
           <div className="rounded-lg border border-gray-200 p-4">
             <h4 className="text-sm font-semibold text-gray-700 mb-3">
               Validations
@@ -228,7 +302,7 @@ export default function QuestionEditor() {
           </div>
         )}
 
-        {question.type === "image" && (
+        {!isExternalSource && question.type === "image" && (
           <div className="rounded-lg border border-gray-200 p-4">
             <ImagesEditor
               images={question.images || []}
@@ -238,7 +312,7 @@ export default function QuestionEditor() {
           </div>
         )}
 
-        {question.type === "dynamic_images" && (
+        {!isExternalSource && question.type === "dynamic_images" && (
           <div className="rounded-lg border border-gray-200 p-4">
             <ImagesEditor
               images={question.dynamic_images || []}

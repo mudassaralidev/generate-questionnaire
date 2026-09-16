@@ -40,6 +40,14 @@ function FlowQuestionNodeComponent({ data }) {
           <span className="rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-medium capitalize text-blue-700 ring-1 ring-blue-200">
             {data.typeLabel}
           </span>
+          {data.isExternalSource && (
+            <span
+              className="truncate rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 ring-1 ring-amber-200"
+              title={data.externalSource || "External source"}
+            >
+              {data.externalSource || "external"}
+            </span>
+          )}
           {data.answerKey ? (
             <span
               className="truncate rounded bg-white/80 px-1.5 py-0.5 font-mono text-[10px] text-slate-600 ring-1 ring-slate-200"

@@ -37,6 +37,7 @@ const VALIDATION_LABELS = {
   min: 'Min',
   max: 'Max',
   integer_only: 'Integer only',
+  is_editable: 'Editable',
   min_date: 'Min date',
   max_date: 'Max date',
   must_match_option: 'Must match option',
@@ -65,8 +66,12 @@ const formatValidationSummary = (validations = {}) => {
     parts.push('Required');
   }
 
+  if (Object.prototype.hasOwnProperty.call(validations, 'is_editable')) {
+    parts.push(validations.is_editable ? 'Editable' : 'Not editable');
+  }
+
   for (const [key, value] of Object.entries(validations)) {
-    if (key === 'required' || key.endsWith('_error') || key.endsWith('_message')) continue;
+    if (key === 'required' || key === 'is_editable' || key.endsWith('_error') || key.endsWith('_message')) continue;
     if (key === 'error_messages' || key === 'messages') continue;
     if (value === false || value === '' || value == null) continue;
     if (typeof value === 'object') continue;
@@ -164,10 +169,39 @@ function buildChildrenByOptionId(questions) {
   return map;
 }
 
+/** Map each external-source parent question id → dependents linked only via parent_question_ids */
+function buildChildrenByExternalParentId(questions) {
+  const map = new Map();
+  const questionById = new Map(questions.map((q) => [String(q._id), q]));
+
+  for (const question of sortByOrder(questions)) {
+    const parentOptionIds = new Set((question.parent_option_ids || []).map(String));
+
+    for (const parentId of question.parent_question_ids || []) {
+      const parent = questionById.get(String(parentId));
+      if (!parent?.is_external_source) continue;
+
+      // Skip parents already represented through selected options
+      const hasOptionFromParent = (parent.options || []).some((o) =>
+        parentOptionIds.has(String(o._id)),
+      );
+      if (hasOptionFromParent) continue;
+
+      const key = String(parentId);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(question);
+    }
+  }
+
+  return map;
+}
+
 function getRootQuestions(questions) {
   return sortByOrder(questions).filter((q) => {
     if (q.is_independent) return true;
-    return !(q.parent_option_ids && q.parent_option_ids.length);
+    const hasOptions = q.parent_option_ids && q.parent_option_ids.length;
+    const hasParents = q.parent_question_ids && q.parent_question_ids.length;
+    return !hasOptions && !hasParents;
   });
 }
 
@@ -184,6 +218,10 @@ function createQuestionData(question, displayIndex) {
     typeLabel: getTypeLabel(question.type),
     required,
     requiredLabel: required ? 'Required' : 'Optional',
+    isExternalSource: Boolean(question.is_external_source),
+    externalSource: question.is_external_source
+      ? String(question.external_source || '').trim()
+      : '',
     validations: formatValidationSummary(validationsObj),
     errorMessages: formatValidationErrorMessages(validationsObj),
   };
@@ -192,6 +230,7 @@ function createQuestionData(question, displayIndex) {
 /** Build nested preview tree (same branching rules as buildFormFlowGraph) */
 export function buildFormFlowPreviewTree(questions = []) {
   const childrenByOptionId = buildChildrenByOptionId(questions);
+  const childrenByExternalParentId = buildChildrenByExternalParentId(questions);
   const questionNumberById = new Map();
 
   sortByOrder(questions).forEach((q, idx) => {
@@ -210,9 +249,10 @@ export function buildFormFlowPreviewTree(questions = []) {
       data: createQuestionData(question, displayIndex),
       options: [],
       images: [],
+      children: [],
     };
 
-    if (OPTION_TYPES.has(question.type)) {
+    if (!question.is_external_source && OPTION_TYPES.has(question.type)) {
       for (const option of sortByOrder(question.options || [])) {
         const optionId = String(option._id);
         const children = (childrenByOptionId.get(optionId) || [])
@@ -227,7 +267,16 @@ export function buildFormFlowPreviewTree(questions = []) {
       }
     }
 
-    if (question.type === 'image' || question.type === 'dynamic_images') {
+    if (question.is_external_source) {
+      node.children = (childrenByExternalParentId.get(qid) || [])
+        .map((child) => visitQuestion(child, nextAncestry))
+        .filter(Boolean);
+    }
+
+    if (
+      !question.is_external_source &&
+      (question.type === 'image' || question.type === 'dynamic_images')
+    ) {
       for (const image of sortByOrder(getQuestionImageSlots(question))) {
         const imageValidations = getImageValidation(image, question.type === 'dynamic_images');
         const required = Boolean(imageValidations.required);
@@ -271,6 +320,11 @@ export function countFormFlowPreviewStats(tree = []) {
         walk(child);
       }
     }
+
+    for (const child of questionNode.children || []) {
+      edgeCount += 1;
+      walk(child);
+    }
   };
 
   tree.forEach(walk);
@@ -285,6 +339,7 @@ function buildFormFlowGraph(questions = []) {
   const nodes = [];
   const edges = [];
   const childrenByOptionId = buildChildrenByOptionId(questions);
+  const childrenByExternalParentId = buildChildrenByExternalParentId(questions);
   const questionNumberById = new Map();
 
   sortByOrder(questions).forEach((q, idx) => {
@@ -297,12 +352,12 @@ function buildFormFlowGraph(questions = []) {
     return `${prefix}-${edgeSeq}`;
   };
 
-  const visitQuestion = (question, parentOptionNodeId, ancestry) => {
+  const visitQuestion = (question, parentNodeId, ancestry) => {
     const qid = String(question._id);
     if (ancestry.has(qid)) return;
 
-    const questionNodeId = parentOptionNodeId
-      ? `q:${qid}<${parentOptionNodeId}`
+    const questionNodeId = parentNodeId
+      ? `q:${qid}<${parentNodeId}`
       : `q:${qid}#root`;
 
     const displayIndex = questionNumberById.get(qid) || 1;
@@ -317,10 +372,10 @@ function buildFormFlowGraph(questions = []) {
       connectable: false,
     });
 
-    if (parentOptionNodeId) {
+    if (parentNodeId) {
       edges.push({
-        id: nextEdgeId(`dep-${parentOptionNodeId}-${questionNodeId}`),
-        source: parentOptionNodeId,
+        id: nextEdgeId(`dep-${parentNodeId}-${questionNodeId}`),
+        source: parentNodeId,
         target: questionNodeId,
         type: 'step',
         style: {
@@ -333,7 +388,7 @@ function buildFormFlowGraph(questions = []) {
     const nextAncestry = new Set(ancestry);
     nextAncestry.add(qid);
 
-    if (OPTION_TYPES.has(question.type)) {
+    if (!question.is_external_source && OPTION_TYPES.has(question.type)) {
       for (const option of sortByOrder(question.options || [])) {
         const optionId = String(option._id);
         const optionNodeId = `o:${optionId}<${questionNodeId}`;
@@ -368,7 +423,17 @@ function buildFormFlowGraph(questions = []) {
       }
     }
 
-    if (question.type === 'image' || question.type === 'dynamic_images') {
+    if (question.is_external_source) {
+      const dependents = childrenByExternalParentId.get(qid) || [];
+      for (const child of dependents) {
+        visitQuestion(child, questionNodeId, nextAncestry);
+      }
+    }
+
+    if (
+      !question.is_external_source &&
+      (question.type === 'image' || question.type === 'dynamic_images')
+    ) {
       for (const image of sortByOrder(getQuestionImageSlots(question))) {
         const imageId = String(image._id || image.key || Math.random());
         const imageNodeId = `i:${imageId}<${questionNodeId}`;

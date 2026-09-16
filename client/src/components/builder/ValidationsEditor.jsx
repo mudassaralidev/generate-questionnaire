@@ -28,6 +28,7 @@ function parseRuleNumberValue(ruleKey, rawValue) {
 
 const VALIDATION_RULES = {
   text: [
+    { key: "is_editable", label: "Is editable", type: "checkbox", skipErrorMessage: true },
     {
       key: "min_length",
       label: "Minimum length",
@@ -84,6 +85,7 @@ const VALIDATION_RULES = {
     },
   ],
   number: [
+    { key: "is_editable", label: "Is editable", type: "checkbox", skipErrorMessage: true },
     {
       key: "min",
       label: "Minimum value",
@@ -99,6 +101,7 @@ const VALIDATION_RULES = {
     { key: "integer_only", label: "Integer only", type: "checkbox" },
   ],
   date: [
+    { key: "is_editable", label: "Is editable", type: "checkbox", skipErrorMessage: true },
     { key: "min_date", label: "Minimum date", type: "date" },
     { key: "max_date", label: "Maximum date", type: "date" },
   ],
@@ -163,6 +166,7 @@ function getRulesForType(type) {
 
 function isRuleActive(rule, validations) {
   if (rule.key === "required") return Boolean(validations.required);
+  if (rule.key === "is_editable") return validations.is_editable !== false;
   const value = validations[rule.key];
   if (rule.type === "checkbox") return Boolean(value);
   return value !== "" && value !== null && value !== undefined;
@@ -194,6 +198,13 @@ export default function ValidationsEditor({
 
   const updateValidation = (key, value) => {
     const next = { ...validations, [key]: value };
+
+    // is_editable must persist false — it is a meaningful flag, not an off switch
+    if (key === "is_editable") {
+      next.is_editable = Boolean(value);
+      onChange(next);
+      return;
+    }
 
     if (
       value === "" ||
@@ -234,7 +245,11 @@ export default function ValidationsEditor({
           <label className="flex items-center gap-2.5 cursor-pointer">
             <input
               type="checkbox"
-              checked={validations[rule.key] || false}
+              checked={
+                rule.key === "is_editable"
+                  ? validations.is_editable !== false
+                  : validations[rule.key] || false
+              }
               onChange={(e) => updateValidation(rule.key, e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
@@ -264,7 +279,7 @@ export default function ValidationsEditor({
           </>
         )}
 
-        {active && (
+        {active && !rule.skipErrorMessage && (
           <ValidationMessageInput
             message={message}
             onChange={(value) => updateRuleMessage(rule.key, value)}

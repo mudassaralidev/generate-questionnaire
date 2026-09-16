@@ -1,12 +1,12 @@
 import { createContext, useContext, useReducer, useCallback } from "react";
 import {
-  generateId,
   reindexOrders,
   normalizeQuestionsOnLoad,
   mergeAndReindexQuestions,
   createQuestionSnapshot,
   deepClone,
   duplicateQuestionWithNewIds,
+  createEmptyQuestion,
 } from "../utils/helpers";
 import { splitQuestionsByDependency } from "../utils/questionUtils";
 
@@ -21,23 +21,10 @@ const initialState = {
 };
 
 function createQuestionPayload(state, overrides = {}) {
-  const isIndependent = overrides.is_independent !== false;
-  const newQ = {
-    _id: generateId(),
-    description: "",
-    type: "text",
-    answer_key: "",
-    parent_question_ids: [],
-    parent_option_ids: [],
+  const newQ = createEmptyQuestion({
     order: state.questions.length + 1,
-    is_independent: isIndependent,
-    _stashedDependencies: { parent_question_ids: [], parent_option_ids: [] },
-    validations: { required: false },
-    options: [],
-    images: [],
-    _resetVersion: 0,
     ...overrides,
-  };
+  });
 
   return {
     ...newQ,

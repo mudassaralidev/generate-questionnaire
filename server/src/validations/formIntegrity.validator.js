@@ -6,7 +6,9 @@ function validateFormIntegrity(questions) {
   const errors = [];
 
   if (!questions || questions.length === 0) {
-    errors.push('At least one question is required. Empty form configurations cannot be saved.');
+    errors.push(
+      "At least one question is required. Empty form configurations cannot be saved.",
+    );
     return errors;
   }
 
@@ -14,16 +16,24 @@ function validateFormIntegrity(questions) {
   const questionOrders = new Set();
 
   const questionIds = new Set(questions.map((q) => String(q._id)));
+  const questionById = new Map(questions.map((q) => [String(q._id), q]));
 
   for (const q of questions) {
     const qLabel = q.answer_key || String(q._id);
+    const isExternalSource = Boolean(q.is_external_source);
 
     if (!q.answer_key || !String(q.answer_key).trim()) {
-      errors.push('Every question must have an answer_key');
+      errors.push("Every question must have an answer_key");
+    }
+
+    if (isExternalSource && !String(q.external_source || "").trim()) {
+      errors.push(
+        `"${qLabel}" is an external source and requires External Source Type`,
+      );
     }
 
     // duplicate answer_key (image / dynamic_images questions may reuse the same key)
-    if (!['image', 'dynamic_images'].includes(q.type) && q.answer_key) {
+    if (!["image", "dynamic_images"].includes(q.type) && q.answer_key) {
       if (answerKeys.has(q.answer_key)) {
         errors.push(`Duplicate answer_key: "${q.answer_key}"`);
       }
@@ -32,12 +42,17 @@ function validateFormIntegrity(questions) {
 
     // duplicate question order
     if (questionOrders.has(q.order)) {
-      errors.push(`Duplicate question order: ${q.order} (answer_key: ${qLabel})`);
+      errors.push(
+        `Duplicate question order: ${q.order} (answer_key: ${qLabel})`,
+      );
     }
     questionOrders.add(q.order);
 
     // options checks
-    if (['radio', 'checkbox', 'dropdown'].includes(q.type)) {
+    if (
+      !isExternalSource &&
+      ["radio", "checkbox", "dropdown"].includes(q.type)
+    ) {
       const optValues = new Set();
       const optOrders = new Set();
 
@@ -60,7 +75,7 @@ function validateFormIntegrity(questions) {
     }
 
     // images checks
-    if (q.type === 'image') {
+    if (!isExternalSource && q.type === "image") {
       const imgKeys = new Set();
       const imgOrders = new Set();
 
@@ -79,7 +94,7 @@ function validateFormIntegrity(questions) {
       }
     }
 
-    if (q.type === 'dynamic_images') {
+    if (!isExternalSource && q.type === "dynamic_images") {
       const imgKeys = new Set();
       const imgOrders = new Set();
 
@@ -88,10 +103,14 @@ function validateFormIntegrity(questions) {
           errors.push(`Missing dynamic image key in "${qLabel}"`);
         }
         if (imgKeys.has(img.key)) {
-          errors.push(`Duplicate dynamic image key "${img.key}" in "${qLabel}"`);
+          errors.push(
+            `Duplicate dynamic image key "${img.key}" in "${qLabel}"`,
+          );
         }
         if (imgOrders.has(img.order)) {
-          errors.push(`Duplicate dynamic image order ${img.order} in "${qLabel}"`);
+          errors.push(
+            `Duplicate dynamic image order ${img.order} in "${qLabel}"`,
+          );
         }
         imgKeys.add(img.key);
         imgOrders.add(img.order);
@@ -102,18 +121,29 @@ function validateFormIntegrity(questions) {
     const hasPQ = q.parent_question_ids && q.parent_question_ids.length > 0;
     const hasPO = q.parent_option_ids && q.parent_option_ids.length > 0;
 
-    if (hasPQ && !hasPO) {
-      errors.push(`"${qLabel}" has parent question(s) but no parent option(s)`);
-    }
     if (hasPO && !hasPQ) {
       errors.push(`"${qLabel}" has parent option(s) but no parent question(s)`);
+    }
+
+    if (hasPQ && !hasPO) {
+      for (const pqId of q.parent_question_ids) {
+        const parent = questionById.get(String(pqId));
+        if (!parent?.is_external_source) {
+          errors.push(
+            `"${qLabel}" has parent question(s) without parent option(s); only external source parents are allowed without options`,
+          );
+          break;
+        }
+      }
     }
 
     // parent question existence
     if (hasPQ) {
       for (const pqId of q.parent_question_ids) {
         if (!questionIds.has(String(pqId))) {
-          errors.push(`"${qLabel}" references non-existent parent question ${pqId}`);
+          errors.push(
+            `"${qLabel}" references non-existent parent question ${pqId}`,
+          );
         }
       }
     }
@@ -126,7 +156,9 @@ function validateFormIntegrity(questions) {
     parentMap.set(String(q._id), (q.parent_question_ids || []).map(String));
   }
 
-  const WHITE = 0, GRAY = 1, BLACK = 2;
+  const WHITE = 0,
+    GRAY = 1,
+    BLACK = 2;
   const color = new Map([...parentMap.keys()].map((id) => [id, WHITE]));
 
   const hasCycle = (node) => {
@@ -142,7 +174,7 @@ function validateFormIntegrity(questions) {
 
   for (const id of parentMap.keys()) {
     if (color.get(id) === WHITE && hasCycle(id)) {
-      errors.push('Circular dependency detected in question dependencies');
+      errors.push("Circular dependency detected in question dependencies");
       break;
     }
   }

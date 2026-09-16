@@ -4,7 +4,10 @@ import { useBuilder } from "../../context/BuilderContext";
 import { useFormBuilder } from "../../hooks/useFormConfig";
 import { validateFormIntegrity } from "../../utils/validation";
 import { cleanQuestionsForSave } from "../../utils/helpers";
-import { requiresSubmissionType, buildConfigPayloadForSave } from "../../constants/formMeta";
+import {
+  requiresSubmissionType,
+  buildConfigPayloadForSave,
+} from "../../constants/formMeta";
 import ErrorAlert from "../common/ErrorAlert";
 import Spinner from "../common/Spinner";
 import FormFlowModal from "./FormFlowModal";
@@ -13,8 +16,13 @@ import DeleteQuestionnaireModal from "./DeleteQuestionnaireModal";
 export default function BuilderHeader() {
   const navigate = useNavigate();
   const { meta, configId, mode, questions, reset } = useBuilder();
-  const { createConfig, editConfig, removeConfig, loading: saving, deleting } =
-    useFormBuilder();
+  const {
+    createConfig,
+    editConfig,
+    removeConfig,
+    loading: saving,
+    deleting,
+  } = useFormBuilder();
   const [errors, setErrors] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [showErrors, setShowErrors] = useState(false);
@@ -139,7 +147,12 @@ export default function BuilderHeader() {
                 </span>
               </div>
               <p className="text-xs text-gray-400">
-                {[meta.tenant, requiresSubmissionType(meta.form_type) && meta.submission_type, meta.form_type]
+                {[
+                  meta.tenant,
+                  requiresSubmissionType(meta.form_type) &&
+                    meta.submission_type,
+                  meta.form_type,
+                ]
                   .filter(Boolean)
                   .join(" · ")}
               </p>

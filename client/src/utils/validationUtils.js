@@ -69,6 +69,10 @@ export function normalizeValidationsForSave(validations = {}) {
     if (out[key] != null && Number(out[key]) < 1) delete out[key];
   }
 
+  if (Object.prototype.hasOwnProperty.call(out, "is_editable")) {
+    out.is_editable = Boolean(out.is_editable);
+  }
+
   for (const key of Object.keys(out)) {
     if (!key.endsWith("_error")) continue;
     const trimmed = String(out[key] ?? "").trim();
