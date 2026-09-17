@@ -42,7 +42,7 @@ const questionValidationsSchema = Joi.object({
   must_match_option: Joi.boolean(),
   min_selections: positiveInteger,
   max_selections: positiveInteger,
-  country_code: Joi.string(),
+  country_code: Joi.string().length(2).uppercase().allow(""),
   ...validationErrorFields,
 })
   .unknown(true)

@@ -1,4 +1,6 @@
 import { errorKeyForRule } from "../../utils/validationUtils";
+import SearchableSelect from "../common/SearchableSelect";
+import { COUNTRY_OPTIONS } from "../../constants/countries";
 
 const TEXT_TYPES = ["text", "textarea"];
 const NUMBER_TYPES = ["number"];
@@ -165,9 +167,10 @@ const VALIDATION_RULES = {
   phone_number: [
     {
       key: "country_code",
-      label: "Country Code",
-      type: "text",
-      placeholder: "e.g. +92 for Pakistan",
+      label: "Country",
+      type: "country_select",
+      placeholder: "Search country...",
+      skipErrorMessage: true,
     },
   ],
 };
@@ -284,6 +287,14 @@ export default function ValidationsEditor({
             />
             <span className="text-sm text-gray-700">{rule.label}</span>
           </label>
+        ) : rule.type === "country_select" ? (
+          <SearchableSelect
+            label={rule.label}
+            options={COUNTRY_OPTIONS}
+            value={validations[rule.key] || ""}
+            onChange={(e) => updateValidation(rule.key, e.target.value)}
+            placeholder={rule.placeholder || "Search country..."}
+          />
         ) : (
           <>
             <label className="label">{rule.label}</label>

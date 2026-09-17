@@ -1,6 +1,6 @@
-import { useBuilder } from '../../context/BuilderContext';
-import { splitQuestionsByDependency } from '../../utils/questionUtils';
-import QuestionSection from './QuestionSection';
+import { useBuilder } from "../../context/BuilderContext";
+import { splitQuestionsByDependency } from "../../utils/questionUtils";
+import QuestionSection from "./QuestionSection";
 
 export default function QuestionList() {
   const {
@@ -17,10 +17,12 @@ export default function QuestionList() {
 
   return (
     <aside className="flex h-full flex-col border-r border-gray-200 bg-gray-50">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-100">
         <h2 className="text-sm font-semibold text-gray-700">
           Questions
-          <span className="ml-2 text-xs font-normal text-gray-400">({questions.length})</span>
+          <span className="ml-2 text-xs font-normal text-gray-400">
+            ({questions.length})
+          </span>
         </h2>
       </div>
 
@@ -35,7 +37,7 @@ export default function QuestionList() {
           onSelect={selectQuestion}
           onDuplicate={duplicateQuestion}
           onDelete={deleteQuestion}
-          onReorder={(items) => reorderSection('independent', items)}
+          onReorder={(items) => reorderSection("independent", items)}
           emptyLabel="No independent questions yet"
         />
 
@@ -49,7 +51,7 @@ export default function QuestionList() {
           onSelect={selectQuestion}
           onDuplicate={duplicateQuestion}
           onDelete={deleteQuestion}
-          onReorder={(items) => reorderSection('dependent', items)}
+          onReorder={(items) => reorderSection("dependent", items)}
           emptyLabel="No dependent questions yet"
         />
       </div>
