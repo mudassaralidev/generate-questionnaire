@@ -69,8 +69,18 @@ export function normalizeValidationsForSave(validations = {}) {
     if (out[key] != null && Number(out[key]) < 1) delete out[key];
   }
 
-  if (Object.prototype.hasOwnProperty.call(out, "is_editable")) {
-    out.is_editable = Boolean(out.is_editable);
+  if (Object.prototype.hasOwnProperty.call(out, "is_readonly")) {
+    out.is_readonly = Boolean(out.is_readonly);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(out, "is_autofill")) {
+    out.is_autofill = Boolean(out.is_autofill);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(out, "fill_from")) {
+    const fillFrom = String(out.fill_from ?? "").trim();
+    if (fillFrom) out.fill_from = fillFrom;
+    else delete out.fill_from;
   }
 
   for (const key of Object.keys(out)) {

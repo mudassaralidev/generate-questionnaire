@@ -26,7 +26,9 @@ const validationErrorFields = {
 
 const questionValidationsSchema = Joi.object({
   required: Joi.boolean(),
-  is_editable: Joi.boolean(),
+  is_readonly: Joi.boolean(),
+  is_autofill: Joi.boolean(),
+  fill_from: Joi.string().allow(""),
   min_length: positiveInteger,
   max_length: positiveInteger,
   pattern: Joi.string(),
@@ -121,7 +123,10 @@ const questionSchema = Joi.object({
   // Allow new scalar question fields without updating Joi for every addition.
   .unknown(true)
   .custom((value, helpers) => {
-    if (value.is_external_source && !String(value.external_source || "").trim()) {
+    if (
+      value.is_external_source &&
+      !String(value.external_source || "").trim()
+    ) {
       return helpers.message(
         '"external_source" is required when is_external_source is true',
       );

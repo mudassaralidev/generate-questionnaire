@@ -1,4 +1,7 @@
-import { splitQuestionsByDependency } from "./questionUtils";
+import {
+  splitQuestionsByDependency,
+  hasExternalSourceParent,
+} from "./questionUtils";
 import {
   migrateValidationsOnLoad,
   migrateImageOnLoad,
@@ -69,7 +72,11 @@ const ensureNestedIds = (items = []) =>
     })),
   );
 
-function normalizeValidationsForQuestion(type, validations = {}, { isExternalSource = false } = {}) {
+function normalizeValidationsForQuestion(
+  type,
+  validations = {},
+  { isExternalSource = false, isExternalSourceChild = false } = {},
+) {
   let next =
     isImageQuestionType(type) && !isExternalSource
       ? defaultValidations()
@@ -78,11 +85,20 @@ function normalizeValidationsForQuestion(type, validations = {}, { isExternalSou
   if (supportsEditableFlag(type)) {
     next = {
       ...next,
-      is_editable:
-        next.is_editable !== undefined ? Boolean(next.is_editable) : true,
+      is_readonly: Boolean(next.is_readonly),
     };
   } else {
-    delete next.is_editable;
+    delete next.is_readonly;
+  }
+
+  if (isExternalSourceChild) {
+    next.is_autofill = Boolean(next.is_autofill);
+    const fillFrom = String(next.fill_from || "").trim();
+    if (fillFrom) next.fill_from = fillFrom;
+    else delete next.fill_from;
+  } else {
+    delete next.is_autofill;
+    delete next.fill_from;
   }
 
   return next;
@@ -105,7 +121,7 @@ export const createEmptyQuestion = (overrides = {}) => {
     _stashedDependencies: { parent_question_ids: [], parent_option_ids: [] },
     validations: normalizeValidationsForQuestion(type, {
       required: false,
-      ...(supportsEditableFlag(type) ? { is_editable: true } : {}),
+      ...(supportsEditableFlag(type) ? { is_readonly: false } : {}),
     }),
     options: [],
     images: [],
@@ -167,10 +183,15 @@ export const duplicateQuestionWithNewIds = (src) => {
 };
 
 /** Normalize a question loaded from API for client-side editing */
-const normalizeQuestionOnLoad = (q) => {
+const normalizeQuestionOnLoad = (q, allQuestions = []) => {
   const independent = !hasDependencies(q);
   const scalars = applyQuestionScalars(q);
   const isExternalSource = Boolean(scalars.is_external_source);
+  const parentQuestionIds = (q.parent_question_ids || []).map(String);
+  const isExternalSourceChild = hasExternalSourceParent(
+    { parent_question_ids: parentQuestionIds },
+    allQuestions,
+  );
 
   const normalized = {
     ...q,
@@ -178,12 +199,12 @@ const normalizeQuestionOnLoad = (q) => {
     _id: isObjectId(q._id) ? String(q._id) : generateId(),
     is_independent: independent,
     external_source: isExternalSource ? scalars.external_source : "",
-    parent_question_ids: (q.parent_question_ids || []).map(String),
+    parent_question_ids: parentQuestionIds,
     parent_option_ids: (q.parent_option_ids || []).map(String),
     _stashedDependencies: independent
       ? { parent_question_ids: [], parent_option_ids: [] }
       : {
-          parent_question_ids: (q.parent_question_ids || []).map(String),
+          parent_question_ids: parentQuestionIds,
           parent_option_ids: (q.parent_option_ids || []).map(String),
         },
     options: isExternalSource ? [] : ensureNestedIds(q.options || []),
@@ -216,7 +237,7 @@ const normalizeQuestionOnLoad = (q) => {
     validations: normalizeValidationsForQuestion(
       scalars.type,
       migrateValidationsOnLoad(q.validations || { required: false }),
-      { isExternalSource },
+      { isExternalSource, isExternalSourceChild },
     ),
     _resetVersion: 0,
   };
@@ -228,7 +249,8 @@ const normalizeQuestionOnLoad = (q) => {
 };
 
 export const normalizeQuestionsOnLoad = (questions) => {
-  const normalized = (questions || []).map(normalizeQuestionOnLoad);
+  const list = questions || [];
+  const normalized = list.map((q) => normalizeQuestionOnLoad(q, list));
   const { independent, dependent } = splitQuestionsByDependency(normalized);
   return mergeAndReindexQuestions(independent, dependent);
 };
@@ -264,6 +286,7 @@ export const cleanQuestionsForSave = (questions) => {
 
   return ordered.map((q) => {
     const isExternalSource = Boolean(q.is_external_source);
+    const isExternalSourceChild = hasExternalSourceParent(q, ordered);
     const scalars = pickQuestionScalarsForSave(q);
 
     const out = {
@@ -273,7 +296,7 @@ export const cleanQuestionsForSave = (questions) => {
       validations: normalizeValidationsForQuestion(
         scalars.type,
         q.validations || { required: false },
-        { isExternalSource },
+        { isExternalSource, isExternalSourceChild },
       ),
       parent_question_ids: [],
       parent_option_ids: [],

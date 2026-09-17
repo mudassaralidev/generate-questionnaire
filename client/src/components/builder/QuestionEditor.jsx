@@ -7,6 +7,7 @@ import {
   supportsEditableFlag,
   isImageQuestionType,
 } from "../../utils/questionFields";
+import { hasExternalSourceParent } from "../../utils/questionUtils";
 import OptionsEditor from "./OptionsEditor";
 import ImagesEditor from "./ImagesEditor";
 import DependencyBuilder from "./DependencyBuilder";
@@ -38,10 +39,7 @@ function buildValidationsForType(type, currentValidations = {}) {
   };
 
   if (supportsEditableFlag(type)) {
-    next.is_editable =
-      currentValidations.is_editable !== undefined
-        ? Boolean(currentValidations.is_editable)
-        : true;
+    next.is_readonly = Boolean(currentValidations.is_readonly);
   }
 
   return next;
@@ -80,6 +78,7 @@ export default function QuestionEditor() {
   const editorKey = `${question._id}-${question._resetVersion || 0}`;
   const canReset = Boolean(question._original) && isQuestionDirty(question);
   const isExternalSource = Boolean(question.is_external_source);
+  const isExternalSourceChild = hasExternalSourceParent(question, questions);
 
   const handleFieldChange = (field) => (e) => {
     const val =
@@ -88,7 +87,17 @@ export default function QuestionEditor() {
   };
 
   const handleIndependentToggle = (e) => {
-    updateQuestion({ ...question, is_independent: e.target.checked });
+    const isIndependent = e.target.checked;
+    const next = { ...question, is_independent: isIndependent };
+
+    if (isIndependent && next.validations) {
+      const validations = { ...next.validations };
+      delete validations.is_autofill;
+      delete validations.fill_from;
+      next.validations = validations;
+    }
+
+    updateQuestion(next);
   };
 
   const handleExternalSourceToggle = (e) => {
@@ -113,8 +122,27 @@ export default function QuestionEditor() {
     updateQuestion({ ...question, images: imgs });
   const handleDynamicImagesChange = (imgs) =>
     updateQuestion({ ...question, dynamic_images: imgs });
-  const handleDependencyChange = (dep) =>
-    updateQuestion({ ...question, ...dep });
+  const handleDependencyChange = (dep) => {
+    const nextQuestion = { ...question, ...dep };
+    const stillExternalChild = hasExternalSourceParent(nextQuestion, questions);
+
+    if (!stillExternalChild && question.validations) {
+      const validations = { ...question.validations };
+      delete validations.is_autofill;
+      delete validations.fill_from;
+      nextQuestion.validations = validations;
+    } else if (
+      stillExternalChild &&
+      nextQuestion.validations?.is_autofill === undefined
+    ) {
+      nextQuestion.validations = {
+        ...(nextQuestion.validations || {}),
+        is_autofill: false,
+      };
+    }
+
+    updateQuestion(nextQuestion);
+  };
 
   const handleReset = () => {
     if (!canReset) return;
@@ -291,6 +319,7 @@ export default function QuestionEditor() {
               questionType={question.type}
               validations={question.validations || {}}
               onChange={handleValidationsChange}
+              isExternalSourceChild={isExternalSourceChild}
             />
           </div>
         ) : (

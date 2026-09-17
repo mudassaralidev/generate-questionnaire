@@ -1,11 +1,11 @@
-import dagre from 'dagre';
+import dagre from "dagre";
 
-const OPTION_TYPES = new Set(['radio', 'checkbox', 'dropdown']);
+const OPTION_TYPES = new Set(["radio", "checkbox", "dropdown"]);
 
 const FLOW_NODE_TYPES = {
-  question: 'flowQuestion',
-  option: 'flowOption',
-  image: 'flowImage',
+  question: "flowQuestion",
+  option: "flowOption",
+  image: "flowImage",
 };
 
 export const NODE_DIMENSIONS = {
@@ -15,68 +15,81 @@ export const NODE_DIMENSIONS = {
 };
 
 const TYPE_LABELS = {
-  radio: 'Radio',
-  checkbox: 'Checkbox',
-  dropdown: 'Dropdown',
-  text: 'Text',
-  textarea: 'Textarea',
-  number: 'Number',
-  date: 'Date',
-  image: 'Image',
-  dynamic_images: 'Dynamic Images',
-  phoneNumber: 'Phone',
-  comment: 'Comment',
+  radio: "Radio",
+  checkbox: "Checkbox",
+  dropdown: "Dropdown",
+  text: "Text",
+  textarea: "Textarea",
+  number: "Number",
+  date: "Date",
+  image: "Image",
+  dynamic_images: "Dynamic Images",
+  phoneNumber: "Phone",
+  comment: "Comment",
 };
 
 const VALIDATION_LABELS = {
-  min_length: 'Min length',
-  max_length: 'Max length',
-  pattern: 'Pattern',
-  contains: 'Contains',
-  not_contains: 'Not contains',
-  min: 'Min',
-  max: 'Max',
-  integer_only: 'Integer only',
-  is_editable: 'Editable',
-  min_date: 'Min date',
-  max_date: 'Max date',
-  must_match_option: 'Must match option',
-  min_selections: 'Min selections',
-  max_selections: 'Max selections',
-  min_images: 'Min images',
-  max_images: 'Max images',
+  min_length: "Min length",
+  max_length: "Max length",
+  pattern: "Pattern",
+  contains: "Contains",
+  not_contains: "Not contains",
+  min: "Min",
+  max: "Max",
+  integer_only: "Integer only",
+  is_readonly: "Read Only",
+  is_autofill: "Autofill",
+  fill_from: "Fill from",
+  min_date: "Min date",
+  max_date: "Max date",
+  must_match_option: "Must match option",
+  min_selections: "Min selections",
+  max_selections: "Max selections",
+  min_images: "Min images",
+  max_images: "Max images",
 };
 
 const sortByOrder = (items = []) =>
   [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
 const getQuestionTitle = (question) => {
-  const description = String(question?.description || '').trim();
+  const description = String(question?.description || "").trim();
   if (description) return description;
-  const key = String(question?.answer_key || '').trim();
-  return key || 'Untitled question';
+  const key = String(question?.answer_key || "").trim();
+  return key || "Untitled question";
 };
 
-const getTypeLabel = (type) => TYPE_LABELS[type] || type || 'Unknown';
+const getTypeLabel = (type) => TYPE_LABELS[type] || type || "Unknown";
 
 const formatValidationSummary = (validations = {}) => {
   const parts = [];
 
   if (validations.required) {
-    parts.push('Required');
+    parts.push("Required");
   }
 
-  if (Object.prototype.hasOwnProperty.call(validations, 'is_editable')) {
-    parts.push(validations.is_editable ? 'Editable' : 'Not editable');
+  if (Object.prototype.hasOwnProperty.call(validations, "is_readonly")) {
+    parts.push(validations.is_readonly ? "Editable" : "Not editable");
+  }
+
+  if (Object.prototype.hasOwnProperty.call(validations, "is_autofill")) {
+    parts.push(validations.is_autofill ? "Autofill" : "No autofill");
   }
 
   for (const [key, value] of Object.entries(validations)) {
-    if (key === 'required' || key === 'is_editable' || key.endsWith('_error') || key.endsWith('_message')) continue;
-    if (key === 'error_messages' || key === 'messages') continue;
-    if (value === false || value === '' || value == null) continue;
-    if (typeof value === 'object') continue;
+    if (
+      key === "required" ||
+      key === "is_readonly" ||
+      key === "is_autofill" ||
+      key.endsWith("_error") ||
+      key.endsWith("_message")
+    )
+      continue;
+    if (key === "error_messages" || key === "messages") continue;
+    if (value === false || value === "" || value == null) continue;
+    if (typeof value === "object") continue;
 
-    const label = VALIDATION_LABELS[key] || key.replace(/_/g, ' ');
+    const label = VALIDATION_LABELS[key] || key.replace(/_/g, " ");
     if (value === true) parts.push(label);
     else parts.push(`${label}: ${value}`);
   }
@@ -89,38 +102,46 @@ const formatValidationErrorMessages = (validations = {}) => {
   const results = [];
 
   for (const [key, value] of Object.entries(validations)) {
-    if (!key.endsWith('_error')) continue;
-    const text = String(value || '').trim();
+    if (!key.endsWith("_error")) continue;
+    const text = String(value || "").trim();
     if (!text) continue;
 
-    const rule = key.slice(0, -'_error'.length);
+    const rule = key.slice(0, -"_error".length);
     results.push({
-      rule: VALIDATION_LABELS[rule] || rule.replace(/_/g, ' '),
+      rule: VALIDATION_LABELS[rule] || rule.replace(/_/g, " "),
       text,
     });
   }
 
   for (const [key, value] of Object.entries(validations)) {
-    if (!key.endsWith('_message')) continue;
-    const text = String(value || '').trim();
+    if (!key.endsWith("_message")) continue;
+    const text = String(value || "").trim();
     if (!text) continue;
 
-    const rule = key.slice(0, -'_message'.length);
-    if (results.some((entry) => entry.rule === (VALIDATION_LABELS[rule] || rule))) continue;
+    const rule = key.slice(0, -"_message".length);
+    if (
+      results.some((entry) => entry.rule === (VALIDATION_LABELS[rule] || rule))
+    )
+      continue;
     results.push({
-      rule: VALIDATION_LABELS[rule] || rule.replace(/_/g, ' '),
+      rule: VALIDATION_LABELS[rule] || rule.replace(/_/g, " "),
       text,
     });
   }
 
   const legacy = validations.error_messages || validations.messages;
-  if (legacy && typeof legacy === 'object') {
+  if (legacy && typeof legacy === "object") {
     for (const [rule, text] of Object.entries(legacy)) {
-      const trimmed = String(text || '').trim();
+      const trimmed = String(text || "").trim();
       if (!trimmed) continue;
-      if (results.some((entry) => entry.rule === (VALIDATION_LABELS[rule] || rule))) continue;
+      if (
+        results.some(
+          (entry) => entry.rule === (VALIDATION_LABELS[rule] || rule),
+        )
+      )
+        continue;
       results.push({
-        rule: VALIDATION_LABELS[rule] || rule.replace(/_/g, ' '),
+        rule: VALIDATION_LABELS[rule] || rule.replace(/_/g, " "),
         text: trimmed,
       });
     }
@@ -130,27 +151,24 @@ const formatValidationErrorMessages = (validations = {}) => {
 };
 
 function getQuestionImageSlots(question) {
-  if (question.type === 'dynamic_images') return question.dynamic_images || [];
-  if (question.type === 'image') return question.images || [];
+  if (question.type === "dynamic_images") return question.dynamic_images || [];
+  if (question.type === "image") return question.images || [];
   return [];
 }
 
 function getImageValidation(image, dynamic = false) {
   if (dynamic) {
     return (
-      image.dynamic_image_validations
-      || image.image_validation
-      || image.image_validations
-      || image.validations
-      || {}
+      image.dynamic_image_validations ||
+      image.image_validation ||
+      image.image_validations ||
+      image.validations ||
+      {}
     );
   }
 
   return (
-    image.image_validations
-    || image.image_validation
-    || image.validations
-    || {}
+    image.image_validations || image.image_validation || image.validations || {}
   );
 }
 
@@ -175,7 +193,9 @@ function buildChildrenByExternalParentId(questions) {
   const questionById = new Map(questions.map((q) => [String(q._id), q]));
 
   for (const question of sortByOrder(questions)) {
-    const parentOptionIds = new Set((question.parent_option_ids || []).map(String));
+    const parentOptionIds = new Set(
+      (question.parent_option_ids || []).map(String),
+    );
 
     for (const parentId of question.parent_question_ids || []) {
       const parent = questionById.get(String(parentId));
@@ -209,19 +229,19 @@ function createQuestionData(question, displayIndex) {
   const validationsObj = question.validations || {};
   const required = Boolean(validationsObj.required);
   return {
-    kind: 'question',
+    kind: "question",
     questionId: String(question._id),
     displayIndex,
     title: getQuestionTitle(question),
-    answerKey: question.answer_key || '',
+    answerKey: question.answer_key || "",
     type: question.type,
     typeLabel: getTypeLabel(question.type),
     required,
-    requiredLabel: required ? 'Required' : 'Optional',
+    requiredLabel: required ? "Required" : "Optional",
     isExternalSource: Boolean(question.is_external_source),
     externalSource: question.is_external_source
-      ? String(question.external_source || '').trim()
-      : '',
+      ? String(question.external_source || "").trim()
+      : "",
     validations: formatValidationSummary(validationsObj),
     errorMessages: formatValidationErrorMessages(validationsObj),
   };
@@ -260,8 +280,9 @@ export function buildFormFlowPreviewTree(questions = []) {
           .filter(Boolean);
 
         node.options.push({
-          label: String(option.label || '').trim() || option.value || 'Untitled',
-          value: option.value || '',
+          label:
+            String(option.label || "").trim() || option.value || "Untitled",
+          value: option.value || "",
           children,
         });
       }
@@ -275,16 +296,20 @@ export function buildFormFlowPreviewTree(questions = []) {
 
     if (
       !question.is_external_source &&
-      (question.type === 'image' || question.type === 'dynamic_images')
+      (question.type === "image" || question.type === "dynamic_images")
     ) {
       for (const image of sortByOrder(getQuestionImageSlots(question))) {
-        const imageValidations = getImageValidation(image, question.type === 'dynamic_images');
+        const imageValidations = getImageValidation(
+          image,
+          question.type === "dynamic_images",
+        );
         const required = Boolean(imageValidations.required);
         node.images.push({
-          title: String(image.title || '').trim() || image.key || 'Untitled image',
-          key: image.key || '',
+          title:
+            String(image.title || "").trim() || image.key || "Untitled image",
+          key: image.key || "",
           required,
-          requiredLabel: required ? 'Mandatory' : 'Optional',
+          requiredLabel: required ? "Mandatory" : "Optional",
           validations: formatValidationSummary(imageValidations),
           errorMessages: formatValidationErrorMessages(imageValidations),
         });
@@ -377,9 +402,9 @@ function buildFormFlowGraph(questions = []) {
         id: nextEdgeId(`dep-${parentNodeId}-${questionNodeId}`),
         source: parentNodeId,
         target: questionNodeId,
-        type: 'step',
+        type: "step",
         style: {
-          stroke: '#64748b',
+          stroke: "#64748b",
           strokeWidth: 1.5,
         },
       });
@@ -398,10 +423,11 @@ function buildFormFlowGraph(questions = []) {
           type: FLOW_NODE_TYPES.option,
           position: { x: 0, y: 0 },
           data: {
-            kind: 'option',
+            kind: "option",
             optionId,
-            label: String(option.label || '').trim() || option.value || 'Untitled',
-            value: option.value || '',
+            label:
+              String(option.label || "").trim() || option.value || "Untitled",
+            value: option.value || "",
           },
           draggable: false,
           selectable: false,
@@ -412,8 +438,8 @@ function buildFormFlowGraph(questions = []) {
           id: nextEdgeId(`opt-${questionNodeId}-${optionNodeId}`),
           source: questionNodeId,
           target: optionNodeId,
-          type: 'step',
-          style: { stroke: '#94a3b8', strokeWidth: 1.5 },
+          type: "step",
+          style: { stroke: "#94a3b8", strokeWidth: 1.5 },
         });
 
         const dependents = childrenByOptionId.get(optionId) || [];
@@ -432,12 +458,15 @@ function buildFormFlowGraph(questions = []) {
 
     if (
       !question.is_external_source &&
-      (question.type === 'image' || question.type === 'dynamic_images')
+      (question.type === "image" || question.type === "dynamic_images")
     ) {
       for (const image of sortByOrder(getQuestionImageSlots(question))) {
         const imageId = String(image._id || image.key || Math.random());
         const imageNodeId = `i:${imageId}<${questionNodeId}`;
-        const imageValidations = getImageValidation(image, question.type === 'dynamic_images');
+        const imageValidations = getImageValidation(
+          image,
+          question.type === "dynamic_images",
+        );
         const required = Boolean(imageValidations.required);
 
         nodes.push({
@@ -445,11 +474,12 @@ function buildFormFlowGraph(questions = []) {
           type: FLOW_NODE_TYPES.image,
           position: { x: 0, y: 0 },
           data: {
-            kind: 'image',
+            kind: "image",
             imageId,
-            title: String(image.title || '').trim() || image.key || 'Untitled image',
+            title:
+              String(image.title || "").trim() || image.key || "Untitled image",
             required,
-            requiredLabel: required ? 'Mandatory' : 'Optional',
+            requiredLabel: required ? "Mandatory" : "Optional",
           },
           draggable: false,
           selectable: false,
@@ -460,8 +490,8 @@ function buildFormFlowGraph(questions = []) {
           id: nextEdgeId(`img-${questionNodeId}-${imageNodeId}`),
           source: questionNodeId,
           target: imageNodeId,
-          type: 'step',
-          style: { stroke: '#fdba74', strokeWidth: 1.5 },
+          type: "step",
+          style: { stroke: "#fdba74", strokeWidth: 1.5 },
         });
       }
     }
@@ -474,29 +504,29 @@ function buildFormFlowGraph(questions = []) {
   return { nodes, edges };
 }
 
-function layoutFormFlowGraph(nodes, edges, direction = 'TB') {
+function layoutFormFlowGraph(nodes, edges, direction = "TB") {
   if (!nodes.length) return nodes;
 
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
   g.setGraph({
     rankdir: direction,
-    ranksep: direction === 'TB' ? 72 : 64,
-    nodesep: direction === 'TB' ? 48 : 40,
+    ranksep: direction === "TB" ? 72 : 64,
+    nodesep: direction === "TB" ? 48 : 40,
     edgesep: 16,
     marginx: 56,
     marginy: 56,
     align: undefined,
-    acyclicer: 'greedy',
+    acyclicer: "greedy",
   });
 
   for (const node of nodes) {
     const kind =
       node.type === FLOW_NODE_TYPES.option
-        ? 'option'
+        ? "option"
         : node.type === FLOW_NODE_TYPES.image
-          ? 'image'
-          : 'question';
+          ? "image"
+          : "question";
     const { width, height } = NODE_DIMENSIONS[kind];
     g.setNode(node.id, { width, height });
   }
@@ -510,10 +540,10 @@ function layoutFormFlowGraph(nodes, edges, direction = 'TB') {
   return nodes.map((node) => {
     const kind =
       node.type === FLOW_NODE_TYPES.option
-        ? 'option'
+        ? "option"
         : node.type === FLOW_NODE_TYPES.image
-          ? 'image'
-          : 'question';
+          ? "image"
+          : "question";
     const { width, height } = NODE_DIMENSIONS[kind];
     const pos = g.node(node.id);
 
@@ -532,7 +562,7 @@ function layoutFormFlowGraph(nodes, edges, direction = 'TB') {
 export function flowChartTreeHelper(questions = []) {
   const { nodes, edges } = buildFormFlowGraph(questions);
   return {
-    nodes: layoutFormFlowGraph(nodes, edges, 'TB'),
+    nodes: layoutFormFlowGraph(nodes, edges, "TB"),
     edges,
   };
 }

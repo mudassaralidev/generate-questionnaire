@@ -28,7 +28,12 @@ function parseRuleNumberValue(ruleKey, rawValue) {
 
 const VALIDATION_RULES = {
   text: [
-    { key: "is_editable", label: "Is editable", type: "checkbox", skipErrorMessage: true },
+    {
+      key: "is_readonly",
+      label: "Read Only?",
+      type: "checkbox",
+      skipErrorMessage: true,
+    },
     {
       key: "min_length",
       label: "Minimum length",
@@ -85,7 +90,12 @@ const VALIDATION_RULES = {
     },
   ],
   number: [
-    { key: "is_editable", label: "Is editable", type: "checkbox", skipErrorMessage: true },
+    {
+      key: "is_readonly",
+      label: "Read Only",
+      type: "checkbox",
+      skipErrorMessage: true,
+    },
     {
       key: "min",
       label: "Minimum value",
@@ -101,7 +111,12 @@ const VALIDATION_RULES = {
     { key: "integer_only", label: "Integer only", type: "checkbox" },
   ],
   date: [
-    { key: "is_editable", label: "Is editable", type: "checkbox", skipErrorMessage: true },
+    {
+      key: "is_readonly",
+      label: "Read Only?",
+      type: "checkbox",
+      skipErrorMessage: true,
+    },
     { key: "min_date", label: "Minimum date", type: "date" },
     { key: "max_date", label: "Maximum date", type: "date" },
   ],
@@ -157,6 +172,22 @@ const VALIDATION_RULES = {
   ],
 };
 
+const EXTERNAL_SOURCE_CHILD_RULES = [
+  {
+    key: "is_autofill",
+    label: "Is autofill",
+    type: "checkbox",
+    skipErrorMessage: true,
+  },
+  {
+    key: "fill_from",
+    label: "Fill from",
+    type: "text",
+    placeholder: "e.g. parent_field_key",
+    skipErrorMessage: true,
+  },
+];
+
 function getRulesForType(type) {
   if (TEXT_TYPES.includes(type)) return VALIDATION_RULES.text;
   if (NUMBER_TYPES.includes(type)) return VALIDATION_RULES.number;
@@ -166,7 +197,8 @@ function getRulesForType(type) {
 
 function isRuleActive(rule, validations) {
   if (rule.key === "required") return Boolean(validations.required);
-  if (rule.key === "is_editable") return validations.is_editable !== false;
+  if (rule.key === "is_readonly") return Boolean(validations.is_readonly);
+  if (rule.key === "is_autofill") return Boolean(validations.is_autofill);
   const value = validations[rule.key];
   if (rule.type === "checkbox") return Boolean(value);
   return value !== "" && value !== null && value !== undefined;
@@ -193,15 +225,16 @@ export default function ValidationsEditor({
   onChange,
   requiredLabel = "Required field",
   requiredHelp,
+  isExternalSourceChild = false,
 }) {
   const rules = getRulesForType(questionType);
 
   const updateValidation = (key, value) => {
     const next = { ...validations, [key]: value };
 
-    // is_editable must persist false — it is a meaningful flag, not an off switch
-    if (key === "is_editable") {
-      next.is_editable = Boolean(value);
+    // Boolean flags that must persist false
+    if (key === "is_readonly" || key === "is_autofill") {
+      next[key] = Boolean(value);
       onChange(next);
       return;
     }
@@ -245,11 +278,7 @@ export default function ValidationsEditor({
           <label className="flex items-center gap-2.5 cursor-pointer">
             <input
               type="checkbox"
-              checked={
-                rule.key === "is_editable"
-                  ? validations.is_editable !== false
-                  : validations[rule.key] || false
-              }
+              checked={Boolean(validations[rule.key])}
               onChange={(e) => updateValidation(rule.key, e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
@@ -321,6 +350,15 @@ export default function ValidationsEditor({
             Response validation
           </p>
           {rules.map(renderRule)}
+        </div>
+      )}
+
+      {isExternalSourceChild && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Parent Autofill Dependency
+          </p>
+          {EXTERNAL_SOURCE_CHILD_RULES.map(renderRule)}
         </div>
       )}
     </div>

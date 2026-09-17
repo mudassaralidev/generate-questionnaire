@@ -22,7 +22,7 @@ export const QUESTION_TYPES = [
   "dynamic_images",
 ];
 
-export const EDITABLE_FLAG_TYPES = ["text", "number", "date"];
+export const EDITABLE_FLAG_TYPES = ["text", "textarea", "number", "date"];
 export const OPTION_TYPES = ["radio", "checkbox", "dropdown"];
 export const IMAGE_TYPES = ["image", "dynamic_images"];
 export const PLACEHOLDER_TYPES = [
