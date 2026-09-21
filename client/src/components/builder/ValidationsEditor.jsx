@@ -166,7 +166,7 @@ const VALIDATION_RULES = {
 
   phone_number: [
     {
-      key: "country_code",
+      key: "region_code",
       label: "Country",
       type: "country_select",
       placeholder: "Search country...",

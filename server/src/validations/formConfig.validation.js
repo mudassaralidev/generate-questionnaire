@@ -21,7 +21,7 @@ const validationErrorFields = {
   max_selections_error: Joi.string().max(500),
   min_images_error: Joi.string().max(500),
   max_images_error: Joi.string().max(500),
-  country_code_error: Joi.string().max(500),
+  region_code_error: Joi.string().max(500),
 };
 
 const questionValidationsSchema = Joi.object({
@@ -42,7 +42,7 @@ const questionValidationsSchema = Joi.object({
   must_match_option: Joi.boolean(),
   min_selections: positiveInteger,
   max_selections: positiveInteger,
-  country_code: Joi.string().length(2).uppercase().allow(""),
+  region_code: Joi.string().length(2).uppercase().allow("").default(""),
   ...validationErrorFields,
 })
   .unknown(true)

@@ -170,33 +170,32 @@ export default function QuestionEditor() {
         <h3 className="text-sm font-semibold text-gray-700">Question Editor</h3>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-semibold text-black">
+          <span className="text-xs font-mono font-semibold text-gray-500">
             Order #{question.order}
           </span>
 
-          {canReset && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="btn-secondary py-1.5 text-xs"
-              title="Reset this question to its last saved values (keeps current order)"
+          <button
+            type="button"
+            onClick={handleReset}
+            className="btn-secondary py-1.5 text-xs"
+            title="Reset this question to its last saved values (keeps current order)"
+            disabled={!canReset}
+          >
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <svg
-                className="h-3.5 w-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Reset Question
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Reset Question
+          </button>
         </div>
       </div>
 
