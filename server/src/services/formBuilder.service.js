@@ -40,6 +40,9 @@ const resolve = async ({ tenant, submission_type, form_type }) => {
     tenant,
     form_type,
     submission_type: requiresSubmissionType(form_type) ? submission_type : "",
+    is_confirmation_popup: false,
+    confirmation_popup: null,
+    questions: [],
   };
 
   return {
@@ -49,8 +52,16 @@ const resolve = async ({ tenant, submission_type, form_type }) => {
 };
 
 const create = async (data) => {
-  const questions = data.questions || [];
-  const integrityErrors = validateFormIntegrity(questions);
+  const isConfirmationPopup = Boolean(data.is_confirmation_popup);
+  const questions = isConfirmationPopup ? [] : data.questions || [];
+  const confirmation_popup = isConfirmationPopup
+    ? data.confirmation_popup
+    : null;
+
+  const integrityErrors = validateFormIntegrity(questions, {
+    is_confirmation_popup: isConfirmationPopup,
+    confirmation_popup,
+  });
   if (integrityErrors.length)
     throw new ApiError(
       422,
@@ -61,6 +72,9 @@ const create = async (data) => {
   const doc = await TenantConfiguration.create({
     ...stripLegacyMetaFields(data),
     type: "form_questions",
+    is_confirmation_popup: isConfirmationPopup,
+    confirmation_popup,
+    questions,
   });
   return normalizeConfigMeta(doc.toObject());
 };
@@ -69,10 +83,27 @@ const update = async (id, data) => {
   const existing = await TenantConfiguration.findById(id);
   if (!existing) throw new ApiError(404, "Form configuration not found");
 
-  const questions =
-    data.questions !== undefined ? data.questions : existing.questions || [];
+  const isConfirmationPopup =
+    data.is_confirmation_popup !== undefined
+      ? Boolean(data.is_confirmation_popup)
+      : Boolean(existing.is_confirmation_popup);
 
-  const integrityErrors = validateFormIntegrity(questions);
+  const questions = isConfirmationPopup
+    ? []
+    : data.questions !== undefined
+      ? data.questions
+      : existing.questions || [];
+
+  const confirmation_popup = isConfirmationPopup
+    ? data.confirmation_popup !== undefined
+      ? data.confirmation_popup
+      : existing.confirmation_popup
+    : null;
+
+  const integrityErrors = validateFormIntegrity(questions, {
+    is_confirmation_popup: isConfirmationPopup,
+    confirmation_popup,
+  });
   if (integrityErrors.length)
     throw new ApiError(
       422,
@@ -80,7 +111,11 @@ const update = async (id, data) => {
       integrityErrors,
     );
 
-  Object.assign(existing, stripLegacyMetaFields(data));
+  Object.assign(existing, stripLegacyMetaFields(data), {
+    is_confirmation_popup: isConfirmationPopup,
+    confirmation_popup,
+    questions,
+  });
   await existing.save();
   return normalizeConfigMeta(existing.toObject());
 };

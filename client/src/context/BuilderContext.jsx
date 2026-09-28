@@ -9,6 +9,7 @@ import {
   createEmptyQuestion,
 } from "../utils/helpers";
 import { splitQuestionsByDependency } from "../utils/questionUtils";
+import { EMPTY_POP_DATA, normalizePopData } from "../constants/formMeta";
 
 const BuilderContext = createContext(null);
 
@@ -16,6 +17,8 @@ const initialState = {
   meta: { tenant: "", submission_type: "", form_type: "" },
   configId: null,
   mode: "create",
+  is_confirmation_popup: false,
+  confirmation_popup: null,
   questions: [],
   selectedQuestionId: null,
 };
@@ -51,7 +54,12 @@ function placeQuestionInSections(updated, remaining) {
 function reducer(state, action) {
   switch (action.type) {
     case "LOAD_CONFIG": {
-      const { config, mode } = action.payload;
+      const { config, mode, is_confirmation_popup: modeFlag } = action.payload;
+      const is_confirmation_popup =
+        modeFlag !== undefined
+          ? Boolean(modeFlag)
+          : Boolean(config?.is_confirmation_popup);
+
       return {
         ...state,
         configId: config?._id || null,
@@ -63,8 +71,25 @@ function reducer(state, action) {
               form_type: config.form_type,
             }
           : state.meta,
-        questions: normalizeQuestionsOnLoad(config?.questions || []),
+        is_confirmation_popup,
+        confirmation_popup: is_confirmation_popup
+          ? normalizePopData(config?.confirmation_popup || EMPTY_POP_DATA)
+          : null,
+        questions: is_confirmation_popup
+          ? []
+          : normalizeQuestionsOnLoad(config?.questions || []),
         selectedQuestionId: null,
+      };
+    }
+
+    case "UPDATE_POP_DATA": {
+      if (!state.is_confirmation_popup) return state;
+      return {
+        ...state,
+        confirmation_popup: {
+          ...(state.confirmation_popup || EMPTY_POP_DATA),
+          ...action.payload,
+        },
       };
     }
 
@@ -290,8 +315,19 @@ export function BuilderProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const loadConfig = useCallback(
-    (config, mode) =>
-      dispatch({ type: "LOAD_CONFIG", payload: { config, mode } }),
+    (config, mode, options = {}) =>
+      dispatch({
+        type: "LOAD_CONFIG",
+        payload: {
+          config,
+          mode,
+          is_confirmation_popup: options.is_confirmation_popup,
+        },
+      }),
+    [],
+  );
+  const updatePopData = useCallback(
+    (data) => dispatch({ type: "UPDATE_POP_DATA", payload: data }),
     [],
   );
   const addQuestion = useCallback(
@@ -320,8 +356,7 @@ export function BuilderProvider({ children }) {
     [],
   );
   const commitSavedSnapshots = useCallback(
-    (payload = {}) =>
-      dispatch({ type: "COMMIT_SAVED_SNAPSHOTS", payload }),
+    (payload = {}) => dispatch({ type: "COMMIT_SAVED_SNAPSHOTS", payload }),
     [],
   );
   const selectQuestion = useCallback(
@@ -335,6 +370,7 @@ export function BuilderProvider({ children }) {
       value={{
         ...state,
         loadConfig,
+        updatePopData,
         addQuestion,
         duplicateQuestion,
         deleteQuestion,

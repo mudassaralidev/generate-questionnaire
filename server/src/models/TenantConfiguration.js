@@ -70,6 +70,8 @@ const TenantConfigurationSchema = new Schema(
     type: { type: String, default: "form_questions" },
     submission_type: { type: String, default: "" },
     form_type: { type: String, required: true },
+    is_confirmation_popup: { type: Boolean, default: false },
+    confirmation_popup: { type: Schema.Types.Mixed, default: null },
     questions: [QuestionSchema],
   },
   {

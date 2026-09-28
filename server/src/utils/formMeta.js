@@ -29,6 +29,20 @@ function normalizeConfigMeta(doc) {
     out.submission_type = out.submission_type || "";
   }
 
+  out.is_confirmation_popup = Boolean(out.is_confirmation_popup);
+  if (!out.is_confirmation_popup) {
+    out.confirmation_popup = null;
+  } else if (
+    !out.confirmation_popup ||
+    typeof out.confirmation_popup !== "object"
+  ) {
+    out.confirmation_popup = {
+      confirmation_text: "",
+      confirm_button_text: "",
+      cancel_button_text: "",
+    };
+  }
+
   return out;
 }
 

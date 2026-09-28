@@ -6,6 +6,7 @@ export default function DeleteQuestionnaireModal({
   open,
   meta,
   questionCount,
+  isConfirmationPopup = false,
   deleting,
   onCancel,
   onConfirm,
@@ -56,7 +57,7 @@ export default function DeleteQuestionnaireModal({
             id="delete-questionnaire-title"
             className="text-base font-semibold text-red-900 sm:text-lg"
           >
-            Delete Questionnaire
+            Delete {isConfirmationPopup ? "Confirmation Pop Up" : "Questionnaire"}
           </h2>
           <p className="mt-1 text-sm text-red-700">
             This action cannot be undone.
@@ -67,8 +68,9 @@ export default function DeleteQuestionnaireModal({
           <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
             <p className="text-sm font-medium text-gray-900">{metaLabel}</p>
             <p className="mt-1 text-xs text-gray-500">
-              {questionCount} question{questionCount === 1 ? "" : "s"} will be
-              permanently removed.
+              {isConfirmationPopup
+                ? "This confirmation pop up will be permanently removed."
+                : `${questionCount} question${questionCount === 1 ? "" : "s"} will be permanently removed.`}
             </p>
           </div>
 
@@ -81,8 +83,9 @@ export default function DeleteQuestionnaireModal({
               className="mt-0.5 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
             />
             <span className="text-sm text-gray-700">
-              I understand this will permanently delete this questionnaire and
-              all of its questions.
+              {isConfirmationPopup
+                ? "I understand this will permanently delete this confirmation pop up."
+                : "I understand this will permanently delete this questionnaire and all of its questions."}
             </span>
           </label>
         </div>
@@ -107,6 +110,8 @@ export default function DeleteQuestionnaireModal({
                 <Spinner size="sm" />
                 Deleting...
               </>
+            ) : isConfirmationPopup ? (
+              "Delete Pop Up"
             ) : (
               "Delete Questionnaire"
             )}

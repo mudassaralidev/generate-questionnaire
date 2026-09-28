@@ -15,3 +15,6 @@ client/.env.*
 !.env.example
 !server/.env.example
 !client/.env.example
+
+# dist/build folder
+client/dist/

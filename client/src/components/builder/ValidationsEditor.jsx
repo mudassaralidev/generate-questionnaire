@@ -170,7 +170,7 @@ const VALIDATION_RULES = {
       label: "Country",
       type: "country_select",
       placeholder: "Search country...",
-      skipErrorMessage: true,
+      skipErrorMessage: false,
     },
   ],
 };

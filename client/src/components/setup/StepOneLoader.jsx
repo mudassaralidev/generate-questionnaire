@@ -44,7 +44,7 @@ export default function StepOneLoader() {
     }));
   };
 
-  const handleLoad = async () => {
+  const handleLoad = async (isConfirmationPopup) => {
     const missingSubmissionType =
       showSubmissionType && !form.submission_type;
 
@@ -66,7 +66,9 @@ export default function StepOneLoader() {
       }
 
       const res = await resolveFormConfig(params);
-      loadConfig(res.config, res.mode);
+      loadConfig(res.config, res.mode, {
+        is_confirmation_popup: isConfirmationPopup,
+      });
       navigate("/builder");
     } catch (err) {
       setError({ message: err.message, errors: err.errors });
@@ -97,7 +99,7 @@ export default function StepOneLoader() {
           <h1 className="text-2xl font-bold text-gray-900">Form Builder</h1>
           <p className="mt-1 text-sm text-gray-500">
             Please select the following require fields in order to CREATE/UPDATE
-            the tenant's questionnaire
+            the tenant&apos;s questionnaire
           </p>
         </div>
 
@@ -138,14 +140,31 @@ export default function StepOneLoader() {
             <ErrorAlert message={error.message} errors={error.errors} />
           )}
 
-          <button
-            onClick={handleLoad}
-            disabled={loading}
-            className="btn-primary w-full mt-2"
-          >
-            {loading ? <Spinner size="sm" /> : null}
-            {loading ? "Loading..." : "Load Form Configuration"}
-          </button>
+          <div className="pt-2">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              What do you want to create?
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => handleLoad(false)}
+                disabled={loading}
+                className="btn-primary w-full"
+              >
+                {loading ? <Spinner size="sm" /> : null}
+                Create Questions
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLoad(true)}
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary-600 bg-white px-4 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? <Spinner size="sm" /> : null}
+                Create Confirmation Pop Up
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

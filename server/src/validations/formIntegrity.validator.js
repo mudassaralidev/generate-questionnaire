@@ -2,7 +2,28 @@
  * Domain-level integrity checks run before every save.
  * Returns an array of error strings (empty = valid).
  */
-function validateFormIntegrity(questions) {
+function validatePopData(popData) {
+  const errors = [];
+  const data = popData || {};
+
+  if (!String(data.confirmation_text || "").trim()) {
+    errors.push("Confirmation text is required");
+  }
+  if (!String(data.confirm_button_text || "").trim()) {
+    errors.push("Confirm button text is required");
+  }
+  if (!String(data.cancel_button_text || "").trim()) {
+    errors.push("Cancel button text is required");
+  }
+
+  return errors;
+}
+
+function validateFormIntegrity(questions, options = {}) {
+  if (options.is_confirmation_popup) {
+    return validatePopData(options.confirmation_popup);
+  }
+
   const errors = [];
 
   if (!questions || questions.length === 0) {
@@ -182,4 +203,4 @@ function validateFormIntegrity(questions) {
   return errors;
 }
 
-module.exports = { validateFormIntegrity };
+module.exports = { validateFormIntegrity, validatePopData };

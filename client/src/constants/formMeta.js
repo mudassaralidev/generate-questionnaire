@@ -11,8 +11,22 @@ export const FORM_TYPES = [
 
 export const SUBMISSION_FORM_TYPE = "submission";
 
+export const EMPTY_POP_DATA = {
+  confirmation_text: "",
+  confirm_button_text: "",
+  cancel_button_text: "",
+};
+
 export function requiresSubmissionType(formType) {
   return formType === SUBMISSION_FORM_TYPE;
+}
+
+export function normalizePopData(popData) {
+  return {
+    confirmation_text: popData?.confirmation_text ?? "",
+    confirm_button_text: popData?.confirm_button_text ?? "",
+    cancel_button_text: popData?.cancel_button_text ?? "",
+  };
 }
 
 export function normalizeMetaForStorage(meta = {}) {
@@ -26,10 +40,17 @@ export function normalizeMetaForStorage(meta = {}) {
   return out;
 }
 
-export function buildConfigPayloadForSave(meta, questions) {
+export function buildConfigPayloadForSave(
+  meta,
+  questions,
+  { is_confirmation_popup = false, confirmation_popup = null } = {},
+) {
+  const isPopup = Boolean(is_confirmation_popup);
   return {
     ...normalizeMetaForStorage(meta),
-    questions,
+    is_confirmation_popup: isPopup,
+    confirmation_popup: isPopup ? normalizePopData(confirmation_popup) : null,
+    questions: isPopup ? [] : questions,
   };
 }
 

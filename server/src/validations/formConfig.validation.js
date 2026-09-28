@@ -134,6 +134,12 @@ const questionSchema = Joi.object({
     return value;
   });
 
+const popDataSchema = Joi.object({
+  confirmation_text: Joi.string().trim().min(1).required(),
+  confirm_button_text: Joi.string().trim().min(1).required(),
+  cancel_button_text: Joi.string().trim().min(1).required(),
+}).required();
+
 const createFormSchema = Joi.object({
   tenant: Joi.string().required(),
   submission_type: Joi.string().when("form_type", {
@@ -144,7 +150,17 @@ const createFormSchema = Joi.object({
   form_type: Joi.string()
     .valid("submission", "new_poi", "additional")
     .required(),
-  questions: Joi.array().items(questionSchema).min(1).required(),
+  is_confirmation_popup: Joi.boolean().default(false),
+  confirmation_popup: Joi.when("is_confirmation_popup", {
+    is: true,
+    then: popDataSchema,
+    otherwise: Joi.valid(null).default(null),
+  }),
+  questions: Joi.when("is_confirmation_popup", {
+    is: true,
+    then: Joi.array().max(0).default([]),
+    otherwise: Joi.array().items(questionSchema).min(1).required(),
+  }),
 });
 
 const updateFormSchema = Joi.object({
@@ -155,7 +171,17 @@ const updateFormSchema = Joi.object({
     otherwise: Joi.valid("").default(""),
   }),
   form_type: Joi.string().valid("submission", "new_poi", "additional"),
-  questions: Joi.array().items(questionSchema).min(1),
+  is_confirmation_popup: Joi.boolean(),
+  confirmation_popup: Joi.when("is_confirmation_popup", {
+    is: true,
+    then: popDataSchema,
+    otherwise: Joi.valid(null).optional(),
+  }),
+  questions: Joi.when("is_confirmation_popup", {
+    is: true,
+    then: Joi.array().max(0).default([]),
+    otherwise: Joi.array().items(questionSchema).min(1),
+  }),
 });
 
 module.exports = {
