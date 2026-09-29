@@ -5,6 +5,7 @@ import { useFormBuilder } from "../../hooks/useFormConfig";
 import { validateFormIntegrity } from "../../utils/validation";
 import { cleanQuestionsForSave } from "../../utils/helpers";
 import {
+  ENGLISH_LANGUAGE,
   requiresSubmissionType,
   buildConfigPayloadForSave,
 } from "../../constants/formMeta";
@@ -12,6 +13,7 @@ import ErrorAlert from "../common/ErrorAlert";
 import Spinner from "../common/Spinner";
 import FormFlowModal from "./FormFlowModal";
 import DeleteQuestionnaireModal from "./DeleteQuestionnaireModal";
+import TranslationSettingsModal from "./TranslationSettingsModal";
 
 export default function BuilderHeader() {
   const navigate = useNavigate();
@@ -22,8 +24,13 @@ export default function BuilderHeader() {
     questions,
     is_confirmation_popup,
     confirmation_popup,
+    requires_translation,
+    translation_language,
+    default_language,
     reset,
     commitSavedSnapshots,
+    updateTranslationMeta,
+    disableTranslation,
   } = useBuilder();
   const {
     createConfig,
@@ -37,16 +44,24 @@ export default function BuilderHeader() {
   const [showErrors, setShowErrors] = useState(false);
   const [showFlowModal, setShowFlowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const canDelete = mode === "edit" && Boolean(configId);
 
   const runSave = async () => {
     const payload = buildConfigPayloadForSave(
       meta,
-      is_confirmation_popup ? [] : cleanQuestionsForSave(questions),
+      is_confirmation_popup
+        ? []
+        : cleanQuestionsForSave(questions, {
+            requiresTranslation: requires_translation,
+          }),
       {
         is_confirmation_popup,
         confirmation_popup,
+        requires_translation,
+        translation_language,
+        default_language,
       },
     );
 
@@ -76,6 +91,33 @@ export default function BuilderHeader() {
     }
   };
 
+  // const handleSaveClick = async () => {
+  //   const integrityErrors = validateFormIntegrity(questions, {
+  //     is_confirmation_popup,
+  //     confirmation_popup,
+  //   });
+
+  //   if (integrityErrors.length) {
+  //     setErrors(integrityErrors);
+  //     setErrorMessage("Please fix the following errors before saving:");
+  //     setShowErrors(true);
+  //     return;
+  //   }
+
+  //   if (requires_translation && !String(translation_language || "").trim()) {
+  //     setErrors([
+  //       "Translation language is required when translation is enabled.",
+  //     ]);
+  //     setErrorMessage("Please fix the following errors before saving:");
+  //     setShowErrors(true);
+  //     return;
+  //   }
+
+  //   setErrors([]);
+  //   setShowErrors(false);
+  //   await runSave();
+  // };
+
   const handleSaveClick = () => {
     const integrityErrors = validateFormIntegrity(questions, {
       is_confirmation_popup,
@@ -84,6 +126,15 @@ export default function BuilderHeader() {
 
     if (integrityErrors.length) {
       setErrors(integrityErrors);
+      setErrorMessage("Please fix the following errors before saving:");
+      setShowErrors(true);
+      return;
+    }
+
+    if (requires_translation && !String(translation_language || "").trim()) {
+      setErrors([
+        "Translation language is required when translation is enabled.",
+      ]);
       setErrorMessage("Please fix the following errors before saving:");
       setShowErrors(true);
       return;
@@ -135,11 +186,20 @@ export default function BuilderHeader() {
     }
   };
 
+  const handleTranslationToggle = (e) => {
+    const enabled = e.target.checked;
+    if (enabled) {
+      setShowTranslationModal(true);
+      return;
+    }
+    disableTranslation();
+  };
+
   return (
     <>
       <header className="border-b border-gray-200 bg-white px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <button
               onClick={() => {
                 reset();
@@ -165,8 +225,8 @@ export default function BuilderHeader() {
 
             <div className="h-5 w-px bg-gray-200" />
 
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-gray-800">
                   Form Builder
                 </span>
@@ -185,7 +245,7 @@ export default function BuilderHeader() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-400 truncate">
                 {[
                   meta.tenant,
                   requiresSubmissionType(meta.form_type) &&
@@ -198,7 +258,45 @@ export default function BuilderHeader() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={requires_translation}
+                  onChange={handleTranslationToggle}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-xs font-medium text-gray-700">
+                  Translation
+                </span>
+              </label>
+              <div className="h-4 w-px bg-gray-200" />
+              <div className="text-xs text-gray-500 leading-tight">
+                <div>
+                  Lang:{" "}
+                  <span className="font-medium text-gray-700">
+                    {requires_translation ? translation_language || "—" : "—"}
+                  </span>
+                </div>
+                <div>
+                  Default:{" "}
+                  <span className="font-medium text-gray-700">
+                    {requires_translation ? default_language : ENGLISH_LANGUAGE}
+                  </span>
+                </div>
+              </div>
+              {requires_translation && (
+                <button
+                  type="button"
+                  onClick={() => setShowTranslationModal(true)}
+                  className="text-xs text-primary-600 hover:text-primary-800"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+
             <span className="text-xs text-gray-400">
               {is_confirmation_popup
                 ? "Confirmation pop up"
@@ -270,6 +368,19 @@ export default function BuilderHeader() {
           </div>
         )}
       </header>
+
+      <TranslationSettingsModal
+        open={showTranslationModal}
+        initialValues={{
+          translation_language,
+          default_language,
+        }}
+        onCancel={() => setShowTranslationModal(false)}
+        onConfirm={(next) => {
+          updateTranslationMeta(next);
+          setShowTranslationModal(false);
+        }}
+      />
 
       {!is_confirmation_popup && (
         <FormFlowModal

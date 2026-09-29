@@ -6,6 +6,7 @@ import {
 } from "../../utils/validationUtils";
 import SortableList from "../common/SortableList";
 import ValidationsEditor from "./ValidationsEditor";
+import TranslatableField from "../common/TranslatableField";
 
 function ImageSlotCard({
   img,
@@ -67,15 +68,17 @@ function ImageSlotCard({
 
       <div className="p-4 space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label text-sm">Display title</label>
-            <input
-              className="input"
-              placeholder="e.g. Inside Image"
-              value={img.title}
-              onChange={(e) => updateField("title", e.target.value)}
-            />
-          </div>
+          <TranslatableField
+            id={`image-title-${img._id || index}`}
+            label="Display title"
+            value={img.title || ""}
+            translationValue={img.title_translation || ""}
+            placeholder="e.g. Inside Image"
+            onChange={(value) => updateField("title", value)}
+            onTranslationChange={(value) =>
+              updateField("title_translation", value)
+            }
+          />
           <div>
             <label className="label text-sm">Key</label>
             <input
@@ -122,6 +125,7 @@ export default function ImagesEditor({
         _id: generateId(),
         key: "",
         title: "",
+        title_translation: "",
         [validationField]: defaultImageValidation(),
         order: images.length + 1,
       },

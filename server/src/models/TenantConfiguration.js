@@ -2,6 +2,7 @@ const { Schema, model, Types } = require("mongoose");
 
 const OptionSchema = new Schema({
   label: { type: String, required: true },
+  label_translation: { type: String, default: "" },
   value: { type: String, required: true },
   order: { type: Number, default: 1 },
 });
@@ -9,6 +10,7 @@ const OptionSchema = new Schema({
 const ImageSchema = new Schema({
   key: { type: String, required: true },
   title: { type: String, default: "" },
+  title_translation: { type: String, default: "" },
   image_validations: {
     type: Schema.Types.Mixed,
     default: { required: false },
@@ -19,6 +21,7 @@ const ImageSchema = new Schema({
 const DynamicImageSchema = new Schema({
   key: { type: String, required: true },
   title: { type: String, default: "" },
+  title_translation: { type: String, default: "" },
   dynamic_image_validations: {
     type: Schema.Types.Mixed,
     default: { required: false },
@@ -29,7 +32,9 @@ const DynamicImageSchema = new Schema({
 const QuestionSchema = new Schema(
   {
     description: { type: String, default: "" },
+    description_translation: { type: String, default: "" },
     placeholder_text: { type: String, default: "" },
+    placeholder_text_translation: { type: String, default: "" },
     type: {
       type: String,
       enum: [
@@ -70,6 +75,9 @@ const TenantConfigurationSchema = new Schema(
     type: { type: String, default: "form_questions" },
     submission_type: { type: String, default: "" },
     form_type: { type: String, required: true },
+    requires_translation: { type: Boolean, default: false },
+    translation_language: { type: String, default: "" },
+    default_language: { type: String, default: "ENGLISH" },
     is_confirmation_popup: { type: Boolean, default: false },
     confirmation_popup: { type: Schema.Types.Mixed, default: null },
     questions: [QuestionSchema],

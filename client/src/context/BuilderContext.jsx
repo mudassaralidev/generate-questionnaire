@@ -9,7 +9,13 @@ import {
   createEmptyQuestion,
 } from "../utils/helpers";
 import { splitQuestionsByDependency } from "../utils/questionUtils";
-import { EMPTY_POP_DATA, normalizePopData } from "../constants/formMeta";
+import {
+  EMPTY_POP_DATA,
+  EMPTY_TRANSLATION_META,
+  ENGLISH_LANGUAGE,
+  normalizePopData,
+  normalizeTranslationMeta,
+} from "../constants/formMeta";
 
 const BuilderContext = createContext(null);
 
@@ -19,6 +25,7 @@ const initialState = {
   mode: "create",
   is_confirmation_popup: false,
   confirmation_popup: null,
+  ...EMPTY_TRANSLATION_META,
   questions: [],
   selectedQuestionId: null,
 };
@@ -54,11 +61,31 @@ function placeQuestionInSections(updated, remaining) {
 function reducer(state, action) {
   switch (action.type) {
     case "LOAD_CONFIG": {
-      const { config, mode, is_confirmation_popup: modeFlag } = action.payload;
+      const {
+        config,
+        mode,
+        is_confirmation_popup: modeFlag,
+        requires_translation: requiresFlag,
+        translation_language: languageFlag,
+        default_language: defaultFlag,
+      } = action.payload;
       const is_confirmation_popup =
         modeFlag !== undefined
           ? Boolean(modeFlag)
           : Boolean(config?.is_confirmation_popup);
+
+      const translation = normalizeTranslationMeta({
+        requires_translation:
+          requiresFlag !== undefined
+            ? requiresFlag
+            : config?.requires_translation,
+        translation_language:
+          languageFlag !== undefined
+            ? languageFlag
+            : config?.translation_language,
+        default_language:
+          defaultFlag !== undefined ? defaultFlag : config?.default_language,
+      });
 
       return {
         ...state,
@@ -71,9 +98,12 @@ function reducer(state, action) {
               form_type: config.form_type,
             }
           : state.meta,
+        ...translation,
         is_confirmation_popup,
         confirmation_popup: is_confirmation_popup
-          ? normalizePopData(config?.confirmation_popup || EMPTY_POP_DATA)
+          ? normalizePopData(config?.confirmation_popup || EMPTY_POP_DATA, {
+              requiresTranslation: translation.requires_translation,
+            })
           : null,
         questions: is_confirmation_popup
           ? []
@@ -90,6 +120,34 @@ function reducer(state, action) {
           ...(state.confirmation_popup || EMPTY_POP_DATA),
           ...action.payload,
         },
+      };
+    }
+
+    case "UPDATE_TRANSLATION_META": {
+      const next = normalizeTranslationMeta({
+        requires_translation: state.requires_translation,
+        translation_language: state.translation_language,
+        default_language: state.default_language,
+        ...action.payload,
+      });
+
+      return {
+        ...state,
+        ...next,
+        confirmation_popup: state.is_confirmation_popup
+          ? normalizePopData(state.confirmation_popup || EMPTY_POP_DATA, {
+              requiresTranslation: next.requires_translation,
+            })
+          : null,
+      };
+    }
+
+    case "DISABLE_TRANSLATION": {
+      return {
+        ...state,
+        requires_translation: false,
+        translation_language: "",
+        default_language: ENGLISH_LANGUAGE,
       };
     }
 
@@ -322,12 +380,23 @@ export function BuilderProvider({ children }) {
           config,
           mode,
           is_confirmation_popup: options.is_confirmation_popup,
+          requires_translation: options.requires_translation,
+          translation_language: options.translation_language,
+          default_language: options.default_language,
         },
       }),
     [],
   );
   const updatePopData = useCallback(
     (data) => dispatch({ type: "UPDATE_POP_DATA", payload: data }),
+    [],
+  );
+  const updateTranslationMeta = useCallback(
+    (data) => dispatch({ type: "UPDATE_TRANSLATION_META", payload: data }),
+    [],
+  );
+  const disableTranslation = useCallback(
+    () => dispatch({ type: "DISABLE_TRANSLATION" }),
     [],
   );
   const addQuestion = useCallback(
@@ -371,6 +440,8 @@ export function BuilderProvider({ children }) {
         ...state,
         loadConfig,
         updatePopData,
+        updateTranslationMeta,
+        disableTranslation,
         addQuestion,
         duplicateQuestion,
         deleteQuestion,

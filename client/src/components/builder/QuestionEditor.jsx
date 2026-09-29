@@ -12,6 +12,7 @@ import OptionsEditor from "./OptionsEditor";
 import ImagesEditor from "./ImagesEditor";
 import DependencyBuilder from "./DependencyBuilder";
 import ValidationsEditor from "./ValidationsEditor";
+import TranslatableField from "../common/TranslatableField";
 
 const QUESTION_TYPES = [
   { value: "radio", label: "Radio" },
@@ -288,25 +289,38 @@ export default function QuestionEditor() {
           </div>
         )}
 
-        <div>
-          <label className="label">Description</label>
-          <input
-            className="input"
-            placeholder="Question text displayed to the user"
-            defaultValue={question.description}
-            onBlur={handleFieldChange("description")}
-          />
-        </div>
+        <TranslatableField
+          id={`description-${question._id}`}
+          label="Description"
+          value={question.description || ""}
+          translationValue={question.description_translation || ""}
+          placeholder="Question text displayed to the user"
+          useBlur
+          onChange={(value) =>
+            updateQuestion({ ...question, description: value })
+          }
+          onTranslationChange={(value) =>
+            updateQuestion({ ...question, description_translation: value })
+          }
+        />
         {PLACEHOLDER_TYPES.includes(question.type) && (
-          <div>
-            <label className="label">Placeholder</label>
-            <input
-              className="input"
-              placeholder="Text to display as placeholder"
-              defaultValue={question.placeholder_text || ""}
-              onBlur={handleFieldChange("placeholder_text")}
-            />
-          </div>
+          <TranslatableField
+            id={`placeholder-${question._id}`}
+            label="Placeholder"
+            value={question.placeholder_text || ""}
+            translationValue={question.placeholder_text_translation || ""}
+            placeholder="Text to display as placeholder"
+            useBlur
+            onChange={(value) =>
+              updateQuestion({ ...question, placeholder_text: value })
+            }
+            onTranslationChange={(value) =>
+              updateQuestion({
+                ...question,
+                placeholder_text_translation: value,
+              })
+            }
+          />
         )}
 
         {isExternalSource || !isImageQuestionType(question.type) ? (

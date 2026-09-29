@@ -1,5 +1,6 @@
 import { useBuilder } from "../../context/BuilderContext";
-import { EMPTY_POP_DATA } from "../../constants/formMeta";
+import { EMPTY_POP_DATA, translationKeyFor } from "../../constants/formMeta";
+import TranslatableField from "../common/TranslatableField";
 
 const FIELDS = [
   {
@@ -39,34 +40,20 @@ export default function ConfirmationPopupEditor() {
 
         <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">
           {FIELDS.map((field) => (
-            <div key={field.key}>
-              <label className="label" htmlFor={field.key}>
-                {field.label}
-                <span className="ml-0.5 text-red-500">*</span>
-              </label>
-              {field.multiline ? (
-                <textarea
-                  id={field.key}
-                  className="input min-h-[100px]"
-                  placeholder={field.placeholder}
-                  value={data[field.key] || ""}
-                  onChange={(e) =>
-                    updatePopData({ [field.key]: e.target.value })
-                  }
-                />
-              ) : (
-                <input
-                  id={field.key}
-                  className="input"
-                  type="text"
-                  placeholder={field.placeholder}
-                  value={data[field.key] || ""}
-                  onChange={(e) =>
-                    updatePopData({ [field.key]: e.target.value })
-                  }
-                />
-              )}
-            </div>
+            <TranslatableField
+              key={field.key}
+              id={field.key}
+              label={field.label}
+              required
+              multiline={field.multiline}
+              placeholder={field.placeholder}
+              value={data[field.key] || ""}
+              translationValue={data[translationKeyFor(field.key)] || ""}
+              onChange={(value) => updatePopData({ [field.key]: value })}
+              onTranslationChange={(value) =>
+                updatePopData({ [translationKeyFor(field.key)]: value })
+              }
+            />
           ))}
         </div>
       </div>

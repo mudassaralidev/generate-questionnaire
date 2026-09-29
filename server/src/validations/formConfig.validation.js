@@ -6,22 +6,39 @@ const positiveInteger = Joi.number().integer().min(1);
 
 const validationErrorFields = {
   required_error: Joi.string().max(500),
+  required_error_translation: Joi.string().max(500).allow(""),
   min_length_error: Joi.string().max(500),
+  min_length_error_translation: Joi.string().max(500).allow(""),
   max_length_error: Joi.string().max(500),
+  max_length_error_translation: Joi.string().max(500).allow(""),
   pattern_error: Joi.string().max(500),
+  pattern_error_translation: Joi.string().max(500).allow(""),
   contains_error: Joi.string().max(500),
+  contains_error_translation: Joi.string().max(500).allow(""),
   not_contains_error: Joi.string().max(500),
+  not_contains_error_translation: Joi.string().max(500).allow(""),
   min_error: Joi.string().max(500),
+  min_error_translation: Joi.string().max(500).allow(""),
   max_error: Joi.string().max(500),
+  max_error_translation: Joi.string().max(500).allow(""),
   integer_only_error: Joi.string().max(500),
+  integer_only_error_translation: Joi.string().max(500).allow(""),
   min_date_error: Joi.string().max(500),
+  min_date_error_translation: Joi.string().max(500).allow(""),
   max_date_error: Joi.string().max(500),
+  max_date_error_translation: Joi.string().max(500).allow(""),
   must_match_option_error: Joi.string().max(500),
+  must_match_option_error_translation: Joi.string().max(500).allow(""),
   min_selections_error: Joi.string().max(500),
+  min_selections_error_translation: Joi.string().max(500).allow(""),
   max_selections_error: Joi.string().max(500),
+  max_selections_error_translation: Joi.string().max(500).allow(""),
   min_images_error: Joi.string().max(500),
+  min_images_error_translation: Joi.string().max(500).allow(""),
   max_images_error: Joi.string().max(500),
+  max_images_error_translation: Joi.string().max(500).allow(""),
   region_code_error: Joi.string().max(500),
+  region_code_error_translation: Joi.string().max(500).allow(""),
 };
 
 const questionValidationsSchema = Joi.object({
@@ -52,6 +69,7 @@ const questionValidationsSchema = Joi.object({
 const imageValidationsSchema = Joi.object({
   required: Joi.boolean(),
   required_error: Joi.string().max(500),
+  required_error_translation: Joi.string().max(500).allow(""),
 })
   .unknown(true)
   .default({ required: false });
@@ -62,8 +80,11 @@ const dynamicImageValidationsSchema = Joi.object({
   min_images: positiveInteger,
   max_images: positiveInteger,
   required_error: Joi.string().max(500),
+  required_error_translation: Joi.string().max(500).allow(""),
   min_images_error: Joi.string().max(500),
+  min_images_error_translation: Joi.string().max(500).allow(""),
   max_images_error: Joi.string().max(500),
+  max_images_error_translation: Joi.string().max(500).allow(""),
 })
   .unknown(true)
   .default({ required: false });
@@ -71,6 +92,7 @@ const dynamicImageValidationsSchema = Joi.object({
 const optionSchema = Joi.object({
   _id: objectId.optional(),
   label: Joi.string().required(),
+  label_translation: Joi.string().allow("").default(""),
   value: Joi.string().required(),
   order: Joi.number().default(1),
 });
@@ -79,6 +101,7 @@ const imageSchema = Joi.object({
   _id: objectId.optional(),
   key: Joi.string().required(),
   title: Joi.string().allow("").default(""),
+  title_translation: Joi.string().allow("").default(""),
   image_validations: imageValidationsSchema,
   order: Joi.number().default(1),
 });
@@ -87,6 +110,7 @@ const dynamicImageSchema = Joi.object({
   _id: objectId.optional(),
   key: Joi.string().required(),
   title: Joi.string().allow("").default(""),
+  title_translation: Joi.string().allow("").default(""),
   dynamic_image_validations: dynamicImageValidationsSchema,
   order: Joi.number().default(1),
 });
@@ -94,7 +118,9 @@ const dynamicImageSchema = Joi.object({
 const questionSchema = Joi.object({
   _id: objectId.optional(),
   description: Joi.string().allow("").default(""),
+  description_translation: Joi.string().allow("").default(""),
   placeholder_text: Joi.string().allow("").default(""),
+  placeholder_text_translation: Joi.string().allow("").default(""),
   type: Joi.string()
     .valid(
       "radio",
@@ -136,53 +162,97 @@ const questionSchema = Joi.object({
 
 const popDataSchema = Joi.object({
   confirmation_text: Joi.string().trim().min(1).required(),
+  confirmation_text_translation: Joi.string().allow("").default(""),
   confirm_button_text: Joi.string().trim().min(1).required(),
+  confirm_button_text_translation: Joi.string().allow("").default(""),
   cancel_button_text: Joi.string().trim().min(1).required(),
+  cancel_button_text_translation: Joi.string().allow("").default(""),
 }).required();
 
-const createFormSchema = Joi.object({
-  tenant: Joi.string().required(),
-  submission_type: Joi.string().when("form_type", {
-    is: "submission",
-    then: Joi.valid("FOUND", "NOT_FOUND").required(),
-    otherwise: Joi.valid("").default(""),
-  }),
-  form_type: Joi.string()
-    .valid("submission", "new_poi", "additional")
-    .required(),
-  is_confirmation_popup: Joi.boolean().default(false),
-  confirmation_popup: Joi.when("is_confirmation_popup", {
-    is: true,
-    then: popDataSchema,
-    otherwise: Joi.valid(null).default(null),
-  }),
-  questions: Joi.when("is_confirmation_popup", {
-    is: true,
-    then: Joi.array().max(0).default([]),
-    otherwise: Joi.array().items(questionSchema).min(1).required(),
-  }),
-});
+const ENGLISH_LANGUAGE = "ENGLISH";
 
-const updateFormSchema = Joi.object({
-  tenant: Joi.string(),
-  submission_type: Joi.string().when("form_type", {
-    is: "submission",
-    then: Joi.valid("FOUND", "NOT_FOUND").optional(),
-    otherwise: Joi.valid("").default(""),
+const translationFields = {
+  requires_translation: Joi.boolean().default(false),
+  translation_language: Joi.string().allow("").default(""),
+  default_language: Joi.string().allow("").default(ENGLISH_LANGUAGE),
+};
+
+function withTranslationRules(schema) {
+  return schema.custom((value, helpers) => {
+    const requires = Boolean(value.requires_translation);
+    const language = String(value.translation_language || "").trim();
+    const defaultLang = String(value.default_language || "").trim();
+
+    if (requires) {
+      if (!language) {
+        return helpers.message(
+          '"translation_language" is required when requires_translation is true',
+        );
+      }
+      if (
+        defaultLang &&
+        defaultLang !== ENGLISH_LANGUAGE &&
+        defaultLang !== language
+      ) {
+        return helpers.message(
+          '"default_language" must be ENGLISH or match translation_language',
+        );
+      }
+    }
+
+    return value;
+  });
+}
+
+const createFormSchema = withTranslationRules(
+  Joi.object({
+    tenant: Joi.string().required(),
+    submission_type: Joi.string().when("form_type", {
+      is: "submission",
+      then: Joi.valid("FOUND", "NOT_FOUND").required(),
+      otherwise: Joi.valid("").default(""),
+    }),
+    form_type: Joi.string()
+      .valid("submission", "new_poi", "additional")
+      .required(),
+    ...translationFields,
+    is_confirmation_popup: Joi.boolean().default(false),
+    confirmation_popup: Joi.when("is_confirmation_popup", {
+      is: true,
+      then: popDataSchema,
+      otherwise: Joi.valid(null).default(null),
+    }),
+    questions: Joi.when("is_confirmation_popup", {
+      is: true,
+      then: Joi.array().max(0).default([]),
+      otherwise: Joi.array().items(questionSchema).min(1).required(),
+    }),
   }),
-  form_type: Joi.string().valid("submission", "new_poi", "additional"),
-  is_confirmation_popup: Joi.boolean(),
-  confirmation_popup: Joi.when("is_confirmation_popup", {
-    is: true,
-    then: popDataSchema,
-    otherwise: Joi.valid(null).optional(),
+);
+
+const updateFormSchema = withTranslationRules(
+  Joi.object({
+    tenant: Joi.string(),
+    submission_type: Joi.string().when("form_type", {
+      is: "submission",
+      then: Joi.valid("FOUND", "NOT_FOUND").optional(),
+      otherwise: Joi.valid("").default(""),
+    }),
+    form_type: Joi.string().valid("submission", "new_poi", "additional"),
+    ...translationFields,
+    is_confirmation_popup: Joi.boolean(),
+    confirmation_popup: Joi.when("is_confirmation_popup", {
+      is: true,
+      then: popDataSchema,
+      otherwise: Joi.valid(null).optional(),
+    }),
+    questions: Joi.when("is_confirmation_popup", {
+      is: true,
+      then: Joi.array().max(0).default([]),
+      otherwise: Joi.array().items(questionSchema).min(1),
+    }),
   }),
-  questions: Joi.when("is_confirmation_popup", {
-    is: true,
-    then: Joi.array().max(0).default([]),
-    otherwise: Joi.array().items(questionSchema).min(1),
-  }),
-});
+);
 
 module.exports = {
   createFormSchema,

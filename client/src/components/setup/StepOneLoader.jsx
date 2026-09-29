@@ -9,6 +9,8 @@ import { resolveFormConfig } from "../../api/formBuilder.api";
 import {
   FORM_TYPES,
   SUBMISSION_TYPES,
+  ENGLISH_LANGUAGE,
+  normalizeTranslationMeta,
   requiresSubmissionType,
 } from "../../constants/formMeta";
 
@@ -26,6 +28,9 @@ export default function StepOneLoader() {
     tenant: "",
     submission_type: "",
     form_type: "",
+    requires_translation: false,
+    translation_language: "",
+    default_language: ENGLISH_LANGUAGE,
   });
   const [loading, setLoading] = useState(false);
 
@@ -40,13 +45,14 @@ export default function StepOneLoader() {
     setForm((f) => ({
       ...f,
       form_type,
-      submission_type: requiresSubmissionType(form_type) ? f.submission_type : "",
+      submission_type: requiresSubmissionType(form_type)
+        ? f.submission_type
+        : "",
     }));
   };
 
   const handleLoad = async (isConfirmationPopup) => {
-    const missingSubmissionType =
-      showSubmissionType && !form.submission_type;
+    const missingSubmissionType = showSubmissionType && !form.submission_type;
 
     if (!form.tenant || !form.form_type || missingSubmissionType) {
       setError({ message: "Please fill all fields before loading." });
@@ -66,8 +72,25 @@ export default function StepOneLoader() {
       }
 
       const res = await resolveFormConfig(params);
+
+      let translation = normalizeTranslationMeta({
+        requires_translation: form.requires_translation,
+        translation_language: form.translation_language,
+        default_language: form.default_language,
+      });
+
+      // On edit, keep stored translation settings if setup left translation off
+      if (
+        res.mode === "edit" &&
+        !form.requires_translation &&
+        res.config?.requires_translation
+      ) {
+        translation = normalizeTranslationMeta(res.config);
+      }
+
       loadConfig(res.config, res.mode, {
         is_confirmation_popup: isConfirmationPopup,
+        ...translation,
       });
       navigate("/builder");
     } catch (err) {

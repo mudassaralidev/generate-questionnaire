@@ -1,6 +1,8 @@
 import { errorKeyForRule } from "../../utils/validationUtils";
 import SearchableSelect from "../common/SearchableSelect";
 import { COUNTRY_OPTIONS } from "../../constants/countries";
+import TranslatableField from "../common/TranslatableField";
+import { translationKeyFor } from "../../constants/formMeta";
 
 const TEXT_TYPES = ["text", "textarea"];
 const NUMBER_TYPES = ["number"];
@@ -207,16 +209,24 @@ function isRuleActive(rule, validations) {
   return value !== "" && value !== null && value !== undefined;
 }
 
-function ValidationMessageInput({ message, onChange }) {
+function ValidationMessageInput({
+  id,
+  message,
+  translationMessage,
+  onChange,
+  onTranslationChange,
+}) {
   return (
     <div className="mt-1.5">
-      <label className="text-xs text-gray-500">Custom error message</label>
-      <input
-        className="input mt-1 text-sm"
-        type="text"
-        placeholder="Optional message shown when validation fails"
+      <TranslatableField
+        id={id}
+        label="Custom error message"
         value={message}
-        onChange={(e) => onChange(e.target.value)}
+        translationValue={translationMessage}
+        placeholder="Optional message shown when validation fails"
+        inputClassName="input mt-1 text-sm"
+        onChange={onChange}
+        onTranslationChange={onTranslationChange}
       />
     </div>
   );
@@ -249,7 +259,9 @@ export default function ValidationsEditor({
       value === false
     ) {
       delete next[key];
-      delete next[errorKeyForRule(key)];
+      const errorKey = errorKeyForRule(key);
+      delete next[errorKey];
+      delete next[translationKeyFor(errorKey)];
     }
 
     onChange(next);
@@ -268,9 +280,26 @@ export default function ValidationsEditor({
     onChange(next);
   };
 
+  const updateRuleMessageTranslation = (ruleKey, message) => {
+    const errorKey = errorKeyForRule(ruleKey);
+    const translationKey = translationKeyFor(errorKey);
+    const next = { ...validations };
+
+    if (message == null || message === "") {
+      delete next[translationKey];
+    } else {
+      next[translationKey] = message;
+    }
+
+    onChange(next);
+  };
+
   const renderRule = (rule) => {
     const active = isRuleActive(rule, validations);
-    const message = validations[errorKeyForRule(rule.key)] || "";
+    const errorKey = errorKeyForRule(rule.key);
+    const message = validations[errorKey] || "";
+    const translationMessage =
+      validations[translationKeyFor(errorKey)] || "";
 
     return (
       <div
@@ -321,8 +350,13 @@ export default function ValidationsEditor({
 
         {active && !rule.skipErrorMessage && (
           <ValidationMessageInput
+            id={`rule-msg-${rule.key}`}
             message={message}
+            translationMessage={translationMessage}
             onChange={(value) => updateRuleMessage(rule.key, value)}
+            onTranslationChange={(value) =>
+              updateRuleMessageTranslation(rule.key, value)
+            }
           />
         )}
       </div>
@@ -349,8 +383,15 @@ export default function ValidationsEditor({
 
         {validations.required && (
           <ValidationMessageInput
+            id="rule-msg-required"
             message={validations.required_error || ""}
+            translationMessage={
+              validations[translationKeyFor("required_error")] || ""
+            }
             onChange={(value) => updateRuleMessage("required", value)}
+            onTranslationChange={(value) =>
+              updateRuleMessageTranslation("required", value)
+            }
           />
         )}
       </div>

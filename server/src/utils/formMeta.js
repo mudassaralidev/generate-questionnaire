@@ -1,8 +1,32 @@
 const SUBMISSION_TYPE_VALUES = ["FOUND", "NOT_FOUND"];
 const SUBMISSION_FORM_TYPE = "submission";
+const ENGLISH_LANGUAGE = "ENGLISH";
 
 function requiresSubmissionType(formType) {
   return formType === SUBMISSION_FORM_TYPE;
+}
+
+function normalizeTranslationMeta(doc = {}) {
+  const requires_translation = Boolean(doc.requires_translation);
+  const translation_language = requires_translation
+    ? String(doc.translation_language || "").trim()
+    : "";
+
+  let default_language = ENGLISH_LANGUAGE;
+  if (requires_translation) {
+    const rawDefault = String(doc.default_language || "").trim();
+    if (rawDefault === ENGLISH_LANGUAGE || !rawDefault) {
+      default_language = ENGLISH_LANGUAGE;
+    } else {
+      default_language = translation_language || rawDefault;
+    }
+  }
+
+  return {
+    requires_translation,
+    translation_language,
+    default_language,
+  };
 }
 
 /** Map legacy stored meta → submission_type + form_type */
@@ -28,6 +52,8 @@ function normalizeConfigMeta(doc) {
   if (!requiresSubmissionType(out.form_type)) {
     out.submission_type = out.submission_type || "";
   }
+
+  Object.assign(out, normalizeTranslationMeta(out));
 
   out.is_confirmation_popup = Boolean(out.is_confirmation_popup);
   if (!out.is_confirmation_popup) {
@@ -57,6 +83,9 @@ function stripLegacyMetaFields(data = {}) {
   if (!requiresSubmissionType(out.form_type)) {
     out.submission_type = "";
   }
+
+  Object.assign(out, normalizeTranslationMeta(out));
+
   return out;
 }
 
@@ -64,4 +93,6 @@ module.exports = {
   normalizeConfigMeta,
   stripLegacyMetaFields,
   requiresSubmissionType,
+  normalizeTranslationMeta,
+  ENGLISH_LANGUAGE,
 };

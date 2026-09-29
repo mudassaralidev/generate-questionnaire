@@ -36,7 +36,9 @@ export const PLACEHOLDER_TYPES = [
 /** Scalar fields persisted on each question */
 export const QUESTION_SCALAR_FIELDS = {
   description: { default: "" },
+  description_translation: { default: "" },
   placeholder_text: { default: "" },
+  placeholder_text_translation: { default: "" },
   type: { default: "text" },
   answer_key: { default: "" },
   is_external_source: { default: false },

@@ -16,6 +16,7 @@ import {
   supportsEditableFlag,
   isImageQuestionType,
 } from "./questionFields";
+import { stripTranslationFields } from "./translationUtils";
 
 let counter = 0;
 
@@ -263,7 +264,10 @@ export const mergeAndReindexQuestions = (independent, dependent) =>
  * Prepare questions for API create/update.
  * Scalar fields come from QUESTION_SCALAR_FIELDS (+ any extra unknown scalars).
  */
-export const cleanQuestionsForSave = (questions) => {
+export const cleanQuestionsForSave = (
+  questions,
+  { requiresTranslation = false } = {},
+) => {
   const { independent, dependent } = splitQuestionsByDependency(questions);
   const ordered = mergeAndReindexQuestions(independent, dependent);
 
@@ -287,17 +291,26 @@ export const cleanQuestionsForSave = (questions) => {
   return ordered.map((q) => {
     const isExternalSource = Boolean(q.is_external_source);
     const isExternalSourceChild = hasExternalSourceParent(q, ordered);
-    const scalars = pickQuestionScalarsForSave(q);
+    let scalars = pickQuestionScalarsForSave(q);
+    if (!requiresTranslation) {
+      scalars = stripTranslationFields(scalars);
+    }
 
     const out = {
       _id: ensureObjectId(q._id),
       ...scalars,
       order: q.order,
-      validations: normalizeValidationsForQuestion(
-        scalars.type,
-        q.validations || { required: false },
-        { isExternalSource, isExternalSourceChild },
-      ),
+      validations: (() => {
+        let validations = normalizeValidationsForQuestion(
+          scalars.type,
+          q.validations || { required: false },
+          { isExternalSource, isExternalSourceChild },
+        );
+        if (!requiresTranslation) {
+          validations = stripTranslationFields(validations);
+        }
+        return validations;
+      })(),
       parent_question_ids: [],
       parent_option_ids: [],
       options: [],
@@ -314,33 +327,57 @@ export const cleanQuestionsForSave = (questions) => {
 
     if (!isExternalSource) {
       out.options = reindexOrders(
-        (q.options || []).map((o) => ({
-          _id: ensureObjectId(o._id),
-          label: o.label,
-          value: o.value,
-          order: o.order,
-        })),
+        (q.options || []).map((o) => {
+          const option = {
+            _id: ensureObjectId(o._id),
+            label: o.label,
+            value: o.value,
+            order: o.order,
+          };
+          if (requiresTranslation) {
+            option.label_translation = o.label_translation || "";
+          }
+          return option;
+        }),
       );
 
       out.images = reindexOrders(
-        (q.images || []).map((img) => ({
-          ...normalizeImageForSave({
+        (q.images || []).map((img) => {
+          const saved = normalizeImageForSave({
             ...img,
             _id: ensureObjectId(img._id),
-          }),
-        })),
+          });
+          if (!requiresTranslation) {
+            delete saved.title_translation;
+            if (saved.image_validations) {
+              saved.image_validations = stripTranslationFields(
+                saved.image_validations,
+              );
+            }
+          }
+          return saved;
+        }),
       );
 
       out.dynamic_images = reindexOrders(
-        (q.dynamic_images || []).map((img) => ({
-          ...normalizeImageForSave(
+        (q.dynamic_images || []).map((img) => {
+          const saved = normalizeImageForSave(
             {
               ...img,
               _id: ensureObjectId(img._id),
             },
             { dynamic: true },
-          ),
-        })),
+          );
+          if (!requiresTranslation) {
+            delete saved.title_translation;
+            if (saved.dynamic_image_validations) {
+              saved.dynamic_image_validations = stripTranslationFields(
+                saved.dynamic_image_validations,
+              );
+            }
+          }
+          return saved;
+        }),
       );
     }
 

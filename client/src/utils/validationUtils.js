@@ -84,7 +84,9 @@ export function normalizeValidationsForSave(validations = {}) {
   }
 
   for (const key of Object.keys(out)) {
-    if (!key.endsWith("_error")) continue;
+    if (!key.endsWith("_error") && !key.endsWith("_error_translation")) {
+      continue;
+    }
     const trimmed = String(out[key] ?? "").trim();
     if (trimmed) out[key] = trimmed;
     else delete out[key];
@@ -109,6 +111,8 @@ export function normalizeImageValidationForSave(imageValidation = {}) {
   delete out.max_images;
   delete out.min_images_error;
   delete out.max_images_error;
+  delete out.min_images_error_translation;
+  delete out.max_images_error_translation;
   delete out.min_images_message;
   delete out.max_images_message;
 
@@ -173,6 +177,7 @@ export function normalizeImageForSave(img, { dynamic = false } = {}) {
     _id: img._id,
     key: img.key,
     title: img.title || "",
+    title_translation: img.title_translation || "",
     order: img.order,
     [validationKey]: normalizeValidation(
       getImageValidationsFromSlot(img, { dynamic }),
