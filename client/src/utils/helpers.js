@@ -1,6 +1,7 @@
 import {
   splitQuestionsByDependency,
   hasExternalSourceParent,
+  mergeQuestionsByTypePriority,
 } from "./questionUtils";
 import {
   migrateValidationsOnLoad,
@@ -258,7 +259,16 @@ export const normalizeQuestionsOnLoad = (questions) => {
 
 /** Merge independent + dependent lists and assign global order 1..n */
 export const mergeAndReindexQuestions = (independent, dependent) =>
-  reindexOrders([...independent, ...dependent]);
+  reindexOrders(mergeQuestionsByTypePriority(independent, dependent));
+
+/**
+ * Apply type-priority rules and reassign global order 1..n.
+ * When dependents exist: independent late inputs + images come after them.
+ */
+export const normalizeQuestionsOrder = (questions = []) => {
+  const { independent, dependent } = splitQuestionsByDependency(questions);
+  return mergeAndReindexQuestions(independent, dependent);
+};
 
 /**
  * Prepare questions for API create/update.

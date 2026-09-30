@@ -1,8 +1,8 @@
 import { createContext, useContext, useReducer, useCallback } from "react";
 import {
-  reindexOrders,
   normalizeQuestionsOnLoad,
   mergeAndReindexQuestions,
+  normalizeQuestionsOrder,
   createQuestionSnapshot,
   deepClone,
   duplicateQuestionWithNewIds,
@@ -158,7 +158,7 @@ function reducer(state, action) {
       const newQ = createQuestionPayload(state, action.payload);
       return {
         ...state,
-        questions: reindexOrders([...state.questions, newQ]),
+        questions: normalizeQuestionsOrder([...state.questions, newQ]),
         selectedQuestionId: newQ._id,
       };
     }
@@ -172,7 +172,7 @@ function reducer(state, action) {
 
       return {
         ...state,
-        questions: reindexOrders([...state.questions, dup]),
+        questions: normalizeQuestionsOrder([...state.questions, dup]),
         selectedQuestionId: dup._id,
       };
     }
@@ -215,7 +215,7 @@ function reducer(state, action) {
 
       return {
         ...state,
-        questions: reindexOrders(cleaned),
+        questions: normalizeQuestionsOrder(cleaned),
         selectedQuestionId:
           state.selectedQuestionId === action.payload
             ? null
@@ -285,21 +285,28 @@ function reducer(state, action) {
         };
       }
 
+      const typeChanged =
+        payload.type !== undefined && payload.type !== current.type;
+
+      const updatedList = state.questions.map((q) => {
+        if (q._id !== payload._id) return q;
+        const merged = { ...q, ...payload };
+
+        if (payload.parent_option_ids || payload.parent_question_ids) {
+          merged._stashedDependencies = {
+            parent_question_ids: [...(merged.parent_question_ids || [])],
+            parent_option_ids: [...(merged.parent_option_ids || [])],
+          };
+        }
+
+        return merged;
+      });
+
       return {
         ...state,
-        questions: state.questions.map((q) => {
-          if (q._id !== payload._id) return q;
-          const merged = { ...q, ...payload };
-
-          if (payload.parent_option_ids || payload.parent_question_ids) {
-            merged._stashedDependencies = {
-              parent_question_ids: [...(merged.parent_question_ids || [])],
-              parent_option_ids: [...(merged.parent_option_ids || [])],
-            };
-          }
-
-          return merged;
-        }),
+        questions: typeChanged
+          ? normalizeQuestionsOrder(updatedList)
+          : updatedList,
       };
     }
 
