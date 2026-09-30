@@ -11,8 +11,7 @@ import {
 import { splitQuestionsByDependency } from "../utils/questionUtils";
 import {
   EMPTY_POP_DATA,
-  EMPTY_TRANSLATION_META,
-  ENGLISH_LANGUAGE,
+  EMPTY_TRANSLATION,
   normalizePopData,
   normalizeTranslationMeta,
 } from "../constants/formMeta";
@@ -25,7 +24,7 @@ const initialState = {
   mode: "create",
   is_confirmation_popup: false,
   confirmation_popup: null,
-  ...EMPTY_TRANSLATION_META,
+  translation: { ...EMPTY_TRANSLATION },
   questions: [],
   selectedQuestionId: null,
 };
@@ -65,27 +64,18 @@ function reducer(state, action) {
         config,
         mode,
         is_confirmation_popup: modeFlag,
-        requires_translation: requiresFlag,
-        translation_language: languageFlag,
-        default_language: defaultFlag,
+        translation: translationOverride,
       } = action.payload;
       const is_confirmation_popup =
         modeFlag !== undefined
           ? Boolean(modeFlag)
           : Boolean(config?.is_confirmation_popup);
 
-      const translation = normalizeTranslationMeta({
-        requires_translation:
-          requiresFlag !== undefined
-            ? requiresFlag
-            : config?.requires_translation,
-        translation_language:
-          languageFlag !== undefined
-            ? languageFlag
-            : config?.translation_language,
-        default_language:
-          defaultFlag !== undefined ? defaultFlag : config?.default_language,
-      });
+      const translation = normalizeTranslationMeta(
+        translationOverride !== undefined
+          ? { translation: translationOverride }
+          : config || {},
+      );
 
       return {
         ...state,
@@ -98,7 +88,7 @@ function reducer(state, action) {
               form_type: config.form_type,
             }
           : state.meta,
-        ...translation,
+        translation,
         is_confirmation_popup,
         confirmation_popup: is_confirmation_popup
           ? normalizePopData(config?.confirmation_popup || EMPTY_POP_DATA, {
@@ -125,15 +115,15 @@ function reducer(state, action) {
 
     case "UPDATE_TRANSLATION_META": {
       const next = normalizeTranslationMeta({
-        requires_translation: state.requires_translation,
-        translation_language: state.translation_language,
-        default_language: state.default_language,
-        ...action.payload,
+        translation: {
+          ...(state.translation || EMPTY_TRANSLATION),
+          ...action.payload,
+        },
       });
 
       return {
         ...state,
-        ...next,
+        translation: next,
         confirmation_popup: state.is_confirmation_popup
           ? normalizePopData(state.confirmation_popup || EMPTY_POP_DATA, {
               requiresTranslation: next.requires_translation,
@@ -145,9 +135,7 @@ function reducer(state, action) {
     case "DISABLE_TRANSLATION": {
       return {
         ...state,
-        requires_translation: false,
-        translation_language: "",
-        default_language: ENGLISH_LANGUAGE,
+        translation: { ...EMPTY_TRANSLATION },
       };
     }
 
@@ -380,9 +368,7 @@ export function BuilderProvider({ children }) {
           config,
           mode,
           is_confirmation_popup: options.is_confirmation_popup,
-          requires_translation: options.requires_translation,
-          translation_language: options.translation_language,
-          default_language: options.default_language,
+          translation: options.translation,
         },
       }),
     [],

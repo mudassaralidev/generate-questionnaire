@@ -171,22 +171,37 @@ const popDataSchema = Joi.object({
 
 const ENGLISH_LANGUAGE = "ENGLISH";
 
-const translationFields = {
+const translationSchema = Joi.object({
   requires_translation: Joi.boolean().default(false),
   translation_language: Joi.string().allow("").default(""),
   default_language: Joi.string().allow("").default(ENGLISH_LANGUAGE),
-};
+  verify_button_translation: Joi.string().allow("").default(""),
+}).default({
+  requires_translation: false,
+  translation_language: "",
+  default_language: ENGLISH_LANGUAGE,
+  verify_button_translation: "",
+});
 
 function withTranslationRules(schema) {
   return schema.custom((value, helpers) => {
-    const requires = Boolean(value.requires_translation);
-    const language = String(value.translation_language || "").trim();
-    const defaultLang = String(value.default_language || "").trim();
+    const translation = value.translation ?? {};
+    const requires = Boolean(translation.requires_translation);
+    const language = String(translation.translation_language || "").trim();
+    const defaultLang = String(translation.default_language || "").trim();
+    const verifyButton = String(
+      translation.verify_button_translation || "",
+    ).trim();
 
     if (requires) {
       if (!language) {
         return helpers.message(
-          '"translation_language" is required when requires_translation is true',
+          '"translation.translation_language" is required when translation is enabled',
+        );
+      }
+      if (!verifyButton) {
+        return helpers.message(
+          '"translation.verify_button_translation" is required when translation is enabled',
         );
       }
       if (
@@ -195,7 +210,7 @@ function withTranslationRules(schema) {
         defaultLang !== language
       ) {
         return helpers.message(
-          '"default_language" must be ENGLISH or match translation_language',
+          '"translation.default_language" must be ENGLISH or match translation_language',
         );
       }
     }
@@ -215,7 +230,7 @@ const createFormSchema = withTranslationRules(
     form_type: Joi.string()
       .valid("submission", "new_poi", "additional")
       .required(),
-    ...translationFields,
+    translation: translationSchema,
     is_confirmation_popup: Joi.boolean().default(false),
     confirmation_popup: Joi.when("is_confirmation_popup", {
       is: true,
@@ -239,7 +254,7 @@ const updateFormSchema = withTranslationRules(
       otherwise: Joi.valid("").default(""),
     }),
     form_type: Joi.string().valid("submission", "new_poi", "additional"),
-    ...translationFields,
+    translation: translationSchema,
     is_confirmation_popup: Joi.boolean(),
     confirmation_popup: Joi.when("is_confirmation_popup", {
       is: true,

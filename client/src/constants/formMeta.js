@@ -22,11 +22,15 @@ export const EMPTY_POP_DATA = {
   cancel_button_text_translation: "",
 };
 
-export const EMPTY_TRANSLATION_META = {
+export const EMPTY_TRANSLATION = {
   requires_translation: false,
   translation_language: "",
   default_language: ENGLISH_LANGUAGE,
+  verify_button_translation: "",
 };
+
+/** @deprecated use EMPTY_TRANSLATION */
+export const EMPTY_TRANSLATION_META = EMPTY_TRANSLATION;
 
 export function requiresSubmissionType(formType) {
   return formType === SUBMISSION_FORM_TYPE;
@@ -36,7 +40,10 @@ export function translationKeyFor(field) {
   return `${field}_translation`;
 }
 
-export function normalizePopData(popData, { requiresTranslation = false } = {}) {
+export function normalizePopData(
+  popData,
+  { requiresTranslation = false } = {},
+) {
   const out = {
     confirmation_text: popData?.confirmation_text ?? "",
     confirm_button_text: popData?.confirm_button_text ?? "",
@@ -55,27 +62,37 @@ export function normalizePopData(popData, { requiresTranslation = false } = {}) 
   return out;
 }
 
-export function normalizeTranslationMeta(meta = {}) {
-  const requires_translation = Boolean(meta.requires_translation);
+/**
+ * Normalize translation settings into a nested `translation` object.
+ * Accepts either `{ translation: {...} }` or legacy top-level fields.
+ */
+export function normalizeTranslationMeta(source = {}) {
+  const raw = source.translation;
+
+  const requires_translation = Boolean(raw?.requires_translation);
   const translation_language = requires_translation
-    ? String(meta.translation_language || "").trim()
+    ? String(raw?.translation_language || "").trim()
     : "";
 
   let default_language = ENGLISH_LANGUAGE;
   if (requires_translation) {
-    const rawDefault = String(meta.default_language || "").trim();
+    const rawDefault = String(raw?.default_language || "").trim();
     if (rawDefault === ENGLISH_LANGUAGE || !rawDefault) {
       default_language = ENGLISH_LANGUAGE;
     } else {
-      // Non-English default must match the typed translation language
       default_language = translation_language || rawDefault;
     }
   }
+
+  const verify_button_translation = requires_translation
+    ? String(raw?.verify_button_translation || "").trim()
+    : "";
 
   return {
     requires_translation,
     translation_language,
     default_language,
+    verify_button_translation,
   };
 }
 
@@ -104,25 +121,21 @@ export function buildConfigPayloadForSave(
   {
     is_confirmation_popup = false,
     confirmation_popup = null,
-    requires_translation = false,
-    translation_language = "",
-    default_language = ENGLISH_LANGUAGE,
+    translation = EMPTY_TRANSLATION,
   } = {},
 ) {
   const isPopup = Boolean(is_confirmation_popup);
-  const translation = normalizeTranslationMeta({
-    requires_translation,
-    translation_language,
-    default_language,
+  const normalizedTranslation = normalizeTranslationMeta({
+    translation,
   });
 
   return {
     ...normalizeMetaForStorage(meta),
-    ...translation,
+    translation: normalizedTranslation,
     is_confirmation_popup: isPopup,
     confirmation_popup: isPopup
       ? normalizePopData(confirmation_popup, {
-          requiresTranslation: translation.requires_translation,
+          requiresTranslation: normalizedTranslation.requires_translation,
         })
       : null,
     questions: isPopup ? [] : questions,

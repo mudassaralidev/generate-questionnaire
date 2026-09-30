@@ -20,8 +20,10 @@ export default function TranslatableField({
   inputClassName = "input",
   useBlur = false,
 }) {
-  const { requires_translation, translation_language } = useBuilder();
-  const showTranslation = Boolean(requires_translation);
+  const { translation } = useBuilder();
+  const requires_translation = Boolean(translation?.requires_translation);
+  const translation_language = translation?.translation_language || "";
+  const showTranslation = requires_translation;
   const translationLabel = translation_language
     ? `${label ? `${label} ` : ""}(${translation_language})`
     : label

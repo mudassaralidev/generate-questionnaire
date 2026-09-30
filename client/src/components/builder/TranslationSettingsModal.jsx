@@ -14,16 +14,20 @@ export default function TranslationSettingsModal({
 }) {
   const [translationLanguage, setTranslationLanguage] = useState("");
   const [defaultLanguage, setDefaultLanguage] = useState(ENGLISH_LANGUAGE);
+  const [verifyButtonTranslation, setVerifyButtonTranslation] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     const normalized = normalizeTranslationMeta({
-      ...initialValues,
-      requires_translation: true,
+      translation: {
+        ...initialValues,
+        requires_translation: true,
+      },
     });
     setTranslationLanguage(normalized.translation_language || "");
     setDefaultLanguage(normalized.default_language || ENGLISH_LANGUAGE);
+    setVerifyButtonTranslation(normalized.verify_button_translation || "");
     setError("");
   }, [open, initialValues]);
 
@@ -42,16 +46,25 @@ export default function TranslationSettingsModal({
 
   const handleConfirm = () => {
     const trimmed = String(translationLanguage || "").trim();
+    const verifyTrimmed = String(verifyButtonTranslation || "").trim();
+
     if (!trimmed) {
       setError("Translation language is required.");
       return;
     }
+    if (!verifyTrimmed) {
+      setError("Verify button translation is required.");
+      return;
+    }
 
     const next = normalizeTranslationMeta({
-      requires_translation: true,
-      translation_language: trimmed,
-      default_language:
-        defaultLanguage === ENGLISH_LANGUAGE ? ENGLISH_LANGUAGE : trimmed,
+      translation: {
+        requires_translation: true,
+        translation_language: trimmed,
+        default_language:
+          defaultLanguage === ENGLISH_LANGUAGE ? ENGLISH_LANGUAGE : trimmed,
+        verify_button_translation: verifyTrimmed,
+      },
     });
 
     onConfirm?.(next);
@@ -80,8 +93,8 @@ export default function TranslationSettingsModal({
             Enable Translation
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Enter the translation language and choose the default language for
-            this questionnaire.
+            Enter the translation language, default language, and verify button
+            translation for this questionnaire.
           </p>
         </header>
 
@@ -95,7 +108,7 @@ export default function TranslationSettingsModal({
               id="modal_translation_language"
               className="input"
               type="text"
-              placeholder="e.g العربية for Saudia, limba română for Romania etc..."
+              placeholder="e.g العربية (al-ʿArabiyya) for Saudia, limba română for Romania etc..."
               value={translationLanguage}
               onChange={(e) => {
                 const value = e.target.value;
@@ -125,6 +138,21 @@ export default function TranslationSettingsModal({
             options={options}
             placeholder="Select default language..."
           />
+
+          <div>
+            <label className="label" htmlFor="modal_verify_button_translation">
+              Verify Button Translation
+              <span className="ml-0.5 text-red-500">*</span>
+            </label>
+            <input
+              id="modal_verify_button_translation"
+              className="input"
+              type="text"
+              placeholder="e.g. Verify / تحقق"
+              value={verifyButtonTranslation}
+              onChange={(e) => setVerifyButtonTranslation(e.target.value)}
+            />
+          </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>

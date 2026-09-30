@@ -9,7 +9,7 @@ import { resolveFormConfig } from "../../api/formBuilder.api";
 import {
   FORM_TYPES,
   SUBMISSION_TYPES,
-  ENGLISH_LANGUAGE,
+  EMPTY_TRANSLATION,
   normalizeTranslationMeta,
   requiresSubmissionType,
 } from "../../constants/formMeta";
@@ -28,9 +28,7 @@ export default function StepOneLoader() {
     tenant: "",
     submission_type: "",
     form_type: "",
-    requires_translation: false,
-    translation_language: "",
-    default_language: ENGLISH_LANGUAGE,
+    translation: { ...EMPTY_TRANSLATION },
   });
   const [loading, setLoading] = useState(false);
 
@@ -73,24 +71,22 @@ export default function StepOneLoader() {
 
       const res = await resolveFormConfig(params);
 
-      let translation = normalizeTranslationMeta({
-        requires_translation: form.requires_translation,
-        translation_language: form.translation_language,
-        default_language: form.default_language,
+      let normalizedTranslation = normalizeTranslationMeta({
+        translation: form.translation,
       });
 
       // On edit, keep stored translation settings if setup left translation off
       if (
         res.mode === "edit" &&
-        !form.requires_translation &&
-        res.config?.requires_translation
+        !form.translation.requires_translation &&
+        res.config?.translation?.requires_translation
       ) {
-        translation = normalizeTranslationMeta(res.config);
+        normalizedTranslation = normalizeTranslationMeta(res.config);
       }
 
       loadConfig(res.config, res.mode, {
         is_confirmation_popup: isConfirmationPopup,
-        ...translation,
+        translation: normalizedTranslation,
       });
       navigate("/builder");
     } catch (err) {

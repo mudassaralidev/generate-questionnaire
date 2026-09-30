@@ -69,15 +69,31 @@ const QuestionSchema = new Schema(
   { strict: false },
 );
 
+const TranslationSchema = new Schema(
+  {
+    requires_translation: { type: Boolean, default: false },
+    translation_language: { type: String, default: "" },
+    default_language: { type: String, default: "ENGLISH" },
+    verify_button_translation: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
 const TenantConfigurationSchema = new Schema(
   {
     tenant: { type: String, required: true, index: true },
     type: { type: String, default: "form_questions" },
     submission_type: { type: String, default: "" },
     form_type: { type: String, required: true },
-    requires_translation: { type: Boolean, default: false },
-    translation_language: { type: String, default: "" },
-    default_language: { type: String, default: "ENGLISH" },
+    translation: {
+      type: TranslationSchema,
+      default: () => ({
+        requires_translation: false,
+        translation_language: "",
+        default_language: "ENGLISH",
+        verify_button_translation: "",
+      }),
+    },
     is_confirmation_popup: { type: Boolean, default: false },
     confirmation_popup: { type: Schema.Types.Mixed, default: null },
     questions: [QuestionSchema],

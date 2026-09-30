@@ -4,7 +4,8 @@ import TranslatableField from "../common/TranslatableField";
 import { useBuilder } from "../../context/BuilderContext";
 
 export default function OptionsEditor({ options = [], onChange }) {
-  const { requires_translation } = useBuilder();
+  const { translation } = useBuilder();
+  const requires_translation = Boolean(translation?.requires_translation);
 
   const add = () => {
     onChange([

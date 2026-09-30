@@ -24,9 +24,7 @@ export default function BuilderHeader() {
     questions,
     is_confirmation_popup,
     confirmation_popup,
-    requires_translation,
-    translation_language,
-    default_language,
+    translation,
     reset,
     commitSavedSnapshots,
     updateTranslationMeta,
@@ -47,6 +45,9 @@ export default function BuilderHeader() {
   const [showTranslationModal, setShowTranslationModal] = useState(false);
 
   const canDelete = mode === "edit" && Boolean(configId);
+  const requires_translation = Boolean(translation?.requires_translation);
+  const translation_language = translation?.translation_language || "";
+  const default_language = translation?.default_language || ENGLISH_LANGUAGE;
 
   const runSave = async () => {
     const payload = buildConfigPayloadForSave(
@@ -59,9 +60,7 @@ export default function BuilderHeader() {
       {
         is_confirmation_popup,
         confirmation_popup,
-        requires_translation,
-        translation_language,
-        default_language,
+        translation,
       },
     );
 
@@ -91,33 +90,6 @@ export default function BuilderHeader() {
     }
   };
 
-  // const handleSaveClick = async () => {
-  //   const integrityErrors = validateFormIntegrity(questions, {
-  //     is_confirmation_popup,
-  //     confirmation_popup,
-  //   });
-
-  //   if (integrityErrors.length) {
-  //     setErrors(integrityErrors);
-  //     setErrorMessage("Please fix the following errors before saving:");
-  //     setShowErrors(true);
-  //     return;
-  //   }
-
-  //   if (requires_translation && !String(translation_language || "").trim()) {
-  //     setErrors([
-  //       "Translation language is required when translation is enabled.",
-  //     ]);
-  //     setErrorMessage("Please fix the following errors before saving:");
-  //     setShowErrors(true);
-  //     return;
-  //   }
-
-  //   setErrors([]);
-  //   setShowErrors(false);
-  //   await runSave();
-  // };
-
   const handleSaveClick = () => {
     const integrityErrors = validateFormIntegrity(questions, {
       is_confirmation_popup,
@@ -134,6 +106,18 @@ export default function BuilderHeader() {
     if (requires_translation && !String(translation_language || "").trim()) {
       setErrors([
         "Translation language is required when translation is enabled.",
+      ]);
+      setErrorMessage("Please fix the following errors before saving:");
+      setShowErrors(true);
+      return;
+    }
+
+    if (
+      requires_translation &&
+      !String(translation?.verify_button_translation || "").trim()
+    ) {
+      setErrors([
+        "Verify button translation is required when translation is enabled.",
       ]);
       setErrorMessage("Please fix the following errors before saving:");
       setShowErrors(true);
@@ -374,6 +358,8 @@ export default function BuilderHeader() {
         initialValues={{
           translation_language,
           default_language,
+          verify_button_translation:
+            translation?.verify_button_translation || "",
         }}
         onCancel={() => setShowTranslationModal(false)}
         onConfirm={(next) => {

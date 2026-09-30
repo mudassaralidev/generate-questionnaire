@@ -6,15 +6,21 @@ function requiresSubmissionType(formType) {
   return formType === SUBMISSION_FORM_TYPE;
 }
 
+/**
+ * Normalize into nested `translation` object.
+ * Supports legacy top-level requires_translation / translation_language / default_language.
+ */
 function normalizeTranslationMeta(doc = {}) {
-  const requires_translation = Boolean(doc.requires_translation);
+  const raw = doc.translation ?? {};
+
+  const requires_translation = Boolean(raw.requires_translation);
   const translation_language = requires_translation
-    ? String(doc.translation_language || "").trim()
+    ? String(raw.translation_language || "").trim()
     : "";
 
   let default_language = ENGLISH_LANGUAGE;
   if (requires_translation) {
-    const rawDefault = String(doc.default_language || "").trim();
+    const rawDefault = String(raw.default_language || "").trim();
     if (rawDefault === ENGLISH_LANGUAGE || !rawDefault) {
       default_language = ENGLISH_LANGUAGE;
     } else {
@@ -22,10 +28,15 @@ function normalizeTranslationMeta(doc = {}) {
     }
   }
 
+  const verify_button_translation = requires_translation
+    ? String(raw.verify_button_translation || "").trim()
+    : "";
+
   return {
     requires_translation,
     translation_language,
     default_language,
+    verify_button_translation,
   };
 }
 
@@ -53,7 +64,7 @@ function normalizeConfigMeta(doc) {
     out.submission_type = out.submission_type || "";
   }
 
-  Object.assign(out, normalizeTranslationMeta(out));
+  out.translation = normalizeTranslationMeta(out);
 
   out.is_confirmation_popup = Boolean(out.is_confirmation_popup);
   if (!out.is_confirmation_popup) {
@@ -84,7 +95,7 @@ function stripLegacyMetaFields(data = {}) {
     out.submission_type = "";
   }
 
-  Object.assign(out, normalizeTranslationMeta(out));
+  out.translation = normalizeTranslationMeta(out);
 
   return out;
 }
