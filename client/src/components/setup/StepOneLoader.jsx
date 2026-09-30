@@ -16,7 +16,7 @@ import {
 
 export default function StepOneLoader() {
   const navigate = useNavigate();
-  const { loadConfig } = useBuilder();
+  const { setSetupDraft } = useBuilder();
   const {
     tenants = [],
     loading: tenantsLoading,
@@ -49,11 +49,11 @@ export default function StepOneLoader() {
     }));
   };
 
-  const handleLoad = async (isConfirmationPopup) => {
+  const handleContinue = async () => {
     const missingSubmissionType = showSubmissionType && !form.submission_type;
 
     if (!form.tenant || !form.form_type || missingSubmissionType) {
-      setError({ message: "Please fill all fields before loading." });
+      setError({ message: "Please fill all fields before continuing." });
       return;
     }
 
@@ -75,7 +75,6 @@ export default function StepOneLoader() {
         translation: form.translation,
       });
 
-      // On edit, keep stored translation settings if setup left translation off
       if (
         res.mode === "edit" &&
         !form.translation.requires_translation &&
@@ -84,11 +83,17 @@ export default function StepOneLoader() {
         normalizedTranslation = normalizeTranslationMeta(res.config);
       }
 
-      loadConfig(res.config, res.mode, {
-        is_confirmation_popup: isConfirmationPopup,
+      setSetupDraft({
+        form: {
+          tenant: form.tenant,
+          form_type: form.form_type,
+          submission_type: showSubmissionType ? form.submission_type : "",
+        },
+        mode: res.mode,
+        config: res.config,
         translation: normalizedTranslation,
       });
-      navigate("/builder");
+      navigate("/setup/mode");
     } catch (err) {
       setError({ message: err.message, errors: err.errors });
     } finally {
@@ -159,31 +164,15 @@ export default function StepOneLoader() {
             <ErrorAlert message={error.message} errors={error.errors} />
           )}
 
-          <div className="pt-2">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              What do you want to create?
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => handleLoad(false)}
-                disabled={loading}
-                className="btn-primary w-full"
-              >
-                {loading ? <Spinner size="sm" /> : null}
-                Create Questions
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLoad(true)}
-                disabled={loading}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary-600 bg-white px-4 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {loading ? <Spinner size="sm" /> : null}
-                Create Confirmation Pop Up
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={handleContinue}
+            disabled={loading}
+            className="btn-primary w-full mt-2"
+          >
+            {loading ? <Spinner size="sm" /> : null}
+            {loading ? "Loading..." : "Continue"}
+          </button>
         </div>
       </div>
     </div>

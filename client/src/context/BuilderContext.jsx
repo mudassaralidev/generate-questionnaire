@@ -27,6 +27,7 @@ const initialState = {
   translation: { ...EMPTY_TRANSLATION },
   questions: [],
   selectedQuestionId: null,
+  setupDraft: null,
 };
 
 function createQuestionPayload(state, overrides = {}) {
@@ -136,6 +137,20 @@ function reducer(state, action) {
       return {
         ...state,
         translation: { ...EMPTY_TRANSLATION },
+      };
+    }
+
+    case "SET_SETUP_DRAFT": {
+      return {
+        ...state,
+        setupDraft: action.payload,
+      };
+    }
+
+    case "CLEAR_SETUP_DRAFT": {
+      return {
+        ...state,
+        setupDraft: null,
       };
     }
 
@@ -385,6 +400,14 @@ export function BuilderProvider({ children }) {
     () => dispatch({ type: "DISABLE_TRANSLATION" }),
     [],
   );
+  const setSetupDraft = useCallback(
+    (draft) => dispatch({ type: "SET_SETUP_DRAFT", payload: draft }),
+    [],
+  );
+  const clearSetupDraft = useCallback(
+    () => dispatch({ type: "CLEAR_SETUP_DRAFT" }),
+    [],
+  );
   const addQuestion = useCallback(
     (data) => dispatch({ type: "ADD_QUESTION", payload: data }),
     [],
@@ -428,6 +451,8 @@ export function BuilderProvider({ children }) {
         updatePopData,
         updateTranslationMeta,
         disableTranslation,
+        setSetupDraft,
+        clearSetupDraft,
         addQuestion,
         duplicateQuestion,
         deleteQuestion,
