@@ -53,13 +53,13 @@ export function validateFormIntegrity(questions, options = {}) {
 
     // Image / dynamic_images questions may share the same answer_key across multiple entries
     if (
-      !["image", "dynamic_images"].includes(q.type) &&
+      !["image", "dynamic_images", "text"].includes(q.type) &&
       q.answer_key &&
       answerKeys.has(q.answer_key)
     ) {
       errors.push(`Duplicate answer_key: "${q.answer_key}"`);
     }
-    if (!["image", "dynamic_images"].includes(q.type) && q.answer_key) {
+    if (!["image", "dynamic_images", "text"].includes(q.type) && q.answer_key) {
       answerKeys.add(q.answer_key);
     }
 

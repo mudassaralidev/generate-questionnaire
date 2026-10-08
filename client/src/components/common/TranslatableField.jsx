@@ -22,10 +22,11 @@ export default function TranslatableField({
 }) {
   const { translation } = useBuilder();
   const requires_translation = Boolean(translation?.requires_translation);
-  const translation_language = translation?.translation_language || "";
+  const translation_language_title =
+    translation?.translation_language_title || "";
   const showTranslation = requires_translation;
-  const translationLabel = translation_language
-    ? `${label ? `${label} ` : ""}(${translation_language})`
+  const translationLabel = translation_language_title
+    ? `${label ? `${label} ` : ""}(${translation_language_title})`
     : label
       ? `${label} translation`
       : "Translation";
@@ -63,7 +64,10 @@ export default function TranslatableField({
 
       {showTranslation && (
         <div>
-          <label className="label text-xs text-primary-700" htmlFor={`${id}_translation`}>
+          <label
+            className="label text-xs text-primary-700"
+            htmlFor={`${id}_translation`}
+          >
             {translationLabel}
           </label>
           <InputTag
@@ -72,8 +76,8 @@ export default function TranslatableField({
             className={`${sharedProps.className} border-primary-200 bg-primary-50/40`}
             placeholder={
               translationPlaceholder ||
-              (translation_language
-                ? `Translation in ${translation_language}`
+              (translation_language_title
+                ? `Translation in ${translation_language_title}`
                 : "Translation")
             }
             {...(useBlur

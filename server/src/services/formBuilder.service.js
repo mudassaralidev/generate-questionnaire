@@ -1,4 +1,5 @@
 const TenantConfiguration = require("../models/TenantConfiguration");
+const User = require("../models/User");
 const ApiError = require("../utils/ApiError");
 const {
   validateFormIntegrity,
@@ -7,7 +8,33 @@ const {
   normalizeConfigMeta,
   stripLegacyMetaFields,
   requiresSubmissionType,
+  buildLanguageConfiguration,
 } = require("../utils/formMeta");
+
+const EMPTY_TRANSLATION = {
+  requires_translation: false,
+  translation_language_code: "",
+  translation_language_title: "",
+  default_language: "EN",
+  verify_button_translation: "",
+  translation_support_to_overall_app: false,
+};
+
+/**
+ * When overall-app translation support is enabled, sync language_configuration
+ * onto all FIELD-role users for the tenant.
+ */
+async function syncFieldUserLanguageConfiguration(tenant, translation) {
+  if (!tenant || !translation?.translation_support_to_overall_app) return;
+
+  const languageConfiguration = buildLanguageConfiguration(translation);
+  if (!languageConfiguration) return;
+
+  await User.updateMany(
+    { tenant, role: "FIELD" },
+    { $set: { language_configuration: languageConfiguration } },
+  );
+}
 
 const list = async ({ tenant, submission_type, form_type } = {}) => {
   const filter = { type: "form_questions" };
@@ -40,12 +67,7 @@ const resolve = async ({ tenant, submission_type, form_type }) => {
     tenant,
     form_type,
     submission_type: requiresSubmissionType(form_type) ? submission_type : "",
-    translation: {
-      requires_translation: false,
-      translation_language: "",
-      default_language: "ENGLISH",
-      verify_button_translation: "",
-    },
+    translation: { ...EMPTY_TRANSLATION },
     is_confirmation_popup: false,
     confirmation_popup: null,
     questions: [],
@@ -75,8 +97,15 @@ const create = async (data) => {
       integrityErrors,
     );
 
+  const stripped = stripLegacyMetaFields(data);
+
+  await syncFieldUserLanguageConfiguration(
+    stripped.tenant || data.tenant,
+    stripped.translation,
+  );
+
   const doc = await TenantConfiguration.create({
-    ...stripLegacyMetaFields(data),
+    ...stripped,
     type: "form_questions",
     is_confirmation_popup: isConfirmationPopup,
     confirmation_popup,
@@ -117,11 +146,19 @@ const update = async (id, data) => {
       integrityErrors,
     );
 
-  Object.assign(existing, stripLegacyMetaFields(data), {
+  const stripped = stripLegacyMetaFields(data);
+
+  Object.assign(existing, stripped, {
     is_confirmation_popup: isConfirmationPopup,
     confirmation_popup,
     questions,
   });
+
+  await syncFieldUserLanguageConfiguration(
+    existing.tenant,
+    existing.translation,
+  );
+
   await existing.save();
   return normalizeConfigMeta(existing.toObject());
 };

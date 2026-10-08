@@ -169,34 +169,52 @@ const popDataSchema = Joi.object({
   cancel_button_text_translation: Joi.string().allow("").default(""),
 }).required();
 
-const ENGLISH_LANGUAGE = "ENGLISH";
+const ENGLISH_LANGUAGE = "EN";
 
 const translationSchema = Joi.object({
   requires_translation: Joi.boolean().default(false),
-  translation_language: Joi.string().allow("").default(""),
+  translation_language_code: Joi.string()
+    .length(2)
+    .uppercase()
+    .allow("")
+    .default(""),
+  translation_language_title: Joi.string().allow("").default(""),
   default_language: Joi.string().allow("").default(ENGLISH_LANGUAGE),
   verify_button_translation: Joi.string().allow("").default(""),
+  translation_support_to_overall_app: Joi.boolean().default(false),
 }).default({
   requires_translation: false,
-  translation_language: "",
+  translation_language_code: "",
+  translation_language_title: "",
   default_language: ENGLISH_LANGUAGE,
   verify_button_translation: "",
+  translation_support_to_overall_app: false,
 });
 
 function withTranslationRules(schema) {
   return schema.custom((value, helpers) => {
     const translation = value.translation ?? {};
     const requires = Boolean(translation.requires_translation);
-    const language = String(translation.translation_language || "").trim();
+    const languageCode = String(translation.translation_language_code || "")
+      .trim()
+      .toUpperCase();
+    const language = String(
+      translation.translation_language_title || "",
+    ).trim();
     const defaultLang = String(translation.default_language || "").trim();
     const verifyButton = String(
       translation.verify_button_translation || "",
     ).trim();
 
     if (requires) {
+      if (!languageCode || languageCode.length !== 2) {
+        return helpers.message(
+          '"translation.translation_language_code" is required when translation is enabled',
+        );
+      }
       if (!language) {
         return helpers.message(
-          '"translation.translation_language" is required when translation is enabled',
+          '"translation.translation_language_title" is required when translation is enabled',
         );
       }
       if (!verifyButton) {
@@ -204,13 +222,10 @@ function withTranslationRules(schema) {
           '"translation.verify_button_translation" is required when translation is enabled',
         );
       }
-      if (
-        defaultLang &&
-        defaultLang !== ENGLISH_LANGUAGE &&
-        defaultLang !== language
-      ) {
+      const isEnglishDefault = !defaultLang || defaultLang === ENGLISH_LANGUAGE;
+      if (!isEnglishDefault && defaultLang.toUpperCase() !== languageCode) {
         return helpers.message(
-          '"translation.default_language" must be ENGLISH or match translation_language',
+          '"translation.default_language" must be en or match translation_language_code',
         );
       }
     }

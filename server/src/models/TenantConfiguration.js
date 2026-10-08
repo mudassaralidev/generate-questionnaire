@@ -72,9 +72,11 @@ const QuestionSchema = new Schema(
 const TranslationSchema = new Schema(
   {
     requires_translation: { type: Boolean, default: false },
-    translation_language: { type: String, default: "" },
-    default_language: { type: String, default: "ENGLISH" },
+    translation_language_code: { type: String, default: "" },
+    translation_language_title: { type: String, default: "" },
+    default_language: { type: String, default: "en" },
     verify_button_translation: { type: String, default: "" },
+    translation_support_to_overall_app: { type: Boolean, default: false },
   },
   { _id: false },
 );
@@ -89,9 +91,11 @@ const TenantConfigurationSchema = new Schema(
       type: TranslationSchema,
       default: () => ({
         requires_translation: false,
-        translation_language: "",
-        default_language: "ENGLISH",
+        translation_language_code: "",
+        translation_language_title: "",
+        default_language: "en",
         verify_button_translation: "",
+        translation_support_to_overall_app: false,
       }),
     },
     is_confirmation_popup: { type: Boolean, default: false },

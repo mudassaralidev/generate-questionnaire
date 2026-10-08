@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import SearchableSelect from "../common/SearchableSelect";
+import { COUNTRY_OPTIONS } from "../../constants/countries";
 import {
   ENGLISH_LANGUAGE,
   getDefaultLanguageOptions,
+  isEnglishDefaultLanguage,
   normalizeTranslationMeta,
 } from "../../constants/formMeta";
 
@@ -12,9 +14,11 @@ export default function TranslationSettingsModal({
   onCancel,
   onConfirm,
 }) {
+  const [translationLanguageCode, setTranslationLanguageCode] = useState("");
   const [translationLanguage, setTranslationLanguage] = useState("");
   const [defaultLanguage, setDefaultLanguage] = useState(ENGLISH_LANGUAGE);
   const [verifyButtonTranslation, setVerifyButtonTranslation] = useState("");
+  const [supportOverallApp, setSupportOverallApp] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -25,9 +29,13 @@ export default function TranslationSettingsModal({
         requires_translation: true,
       },
     });
-    setTranslationLanguage(normalized.translation_language || "");
+    setTranslationLanguageCode(normalized.translation_language_code || "");
+    setTranslationLanguage(normalized.translation_language_title || "");
     setDefaultLanguage(normalized.default_language || ENGLISH_LANGUAGE);
     setVerifyButtonTranslation(normalized.verify_button_translation || "");
+    setSupportOverallApp(
+      Boolean(normalized.translation_support_to_overall_app),
+    );
     setError("");
   }, [open, initialValues]);
 
@@ -42,14 +50,34 @@ export default function TranslationSettingsModal({
 
   if (!open) return null;
 
-  const options = getDefaultLanguageOptions(translationLanguage);
+  const options = getDefaultLanguageOptions({
+    translationLanguage,
+    translationLanguageCode,
+  });
+
+  const handleCountryChange = (e) => {
+    const code = String(e.target.value || "")
+      .trim()
+      .toUpperCase();
+    setTranslationLanguageCode(code);
+    if (!isEnglishDefaultLanguage(defaultLanguage)) {
+      setDefaultLanguage(code || ENGLISH_LANGUAGE);
+    }
+  };
 
   const handleConfirm = () => {
-    const trimmed = String(translationLanguage || "").trim();
+    const code = String(translationLanguageCode || "")
+      .trim()
+      .toUpperCase();
+    const title = String(translationLanguage || "").trim();
     const verifyTrimmed = String(verifyButtonTranslation || "").trim();
 
-    if (!trimmed) {
-      setError("Translation language is required.");
+    if (!code) {
+      setError("Please select a translation country.");
+      return;
+    }
+    if (!title) {
+      setError("Translation language title is required.");
       return;
     }
     if (!verifyTrimmed) {
@@ -60,10 +88,13 @@ export default function TranslationSettingsModal({
     const next = normalizeTranslationMeta({
       translation: {
         requires_translation: true,
-        translation_language: trimmed,
-        default_language:
-          defaultLanguage === ENGLISH_LANGUAGE ? ENGLISH_LANGUAGE : trimmed,
+        translation_language_code: code,
+        translation_language_title: title,
+        default_language: isEnglishDefaultLanguage(defaultLanguage)
+          ? ENGLISH_LANGUAGE
+          : code,
         verify_button_translation: verifyTrimmed,
+        translation_support_to_overall_app: supportOverallApp,
       },
     });
 
@@ -93,51 +124,57 @@ export default function TranslationSettingsModal({
             Enable Translation
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Enter the translation language, default language, and verify button
-            translation for this questionnaire.
+            Select the country, language title, default language, and verify
+            button translation for this questionnaire.
           </p>
         </header>
 
         <div className="space-y-4 px-5 py-5 sm:px-6">
-          <div>
-            <label className="label" htmlFor="modal_translation_language">
-              Translation language
-              <span className="ml-0.5 text-red-500">*</span>
-            </label>
-            <input
-              id="modal_translation_language"
-              className="input"
-              type="text"
-              placeholder="e.g العربية (al-ʿArabiyya) for Saudia, limba română for Romania etc..."
-              value={translationLanguage}
-              onChange={(e) => {
-                const value = e.target.value;
-                setTranslationLanguage(value);
-                if (defaultLanguage !== ENGLISH_LANGUAGE) {
-                  setDefaultLanguage(value.trim() || ENGLISH_LANGUAGE);
-                }
-              }}
-            />
-          </div>
-
           <SearchableSelect
-            label="Default language"
-            value={
-              defaultLanguage === ENGLISH_LANGUAGE
-                ? ENGLISH_LANGUAGE
-                : translationLanguage || defaultLanguage
-            }
-            onChange={(e) => {
-              const selected = e.target.value;
-              setDefaultLanguage(
-                selected === ENGLISH_LANGUAGE
-                  ? ENGLISH_LANGUAGE
-                  : String(translationLanguage || "").trim() || selected,
-              );
-            }}
-            options={options}
-            placeholder="Select default language..."
+            label="Translation country"
+            value={translationLanguageCode}
+            onChange={handleCountryChange}
+            options={COUNTRY_OPTIONS.filter((opt) => opt.value)}
+            placeholder="Search country..."
           />
+
+          {Boolean(translationLanguageCode) && (
+            <div>
+              <label className="label" htmlFor="modal_translation_language">
+                Translation Language Title
+                <span className="ml-0.5 text-red-500">*</span>
+              </label>
+              <input
+                id="modal_translation_language"
+                className="input"
+                type="text"
+                placeholder="e.g. العربية (al-ʿArabiyya), limba română..."
+                value={translationLanguage}
+                onChange={(e) => setTranslationLanguage(e.target.value)}
+              />
+            </div>
+          )}
+
+          {Boolean(translationLanguageCode) && (
+            <SearchableSelect
+              label="Default language"
+              value={
+                isEnglishDefaultLanguage(defaultLanguage)
+                  ? ENGLISH_LANGUAGE
+                  : translationLanguageCode || defaultLanguage
+              }
+              onChange={(e) => {
+                const selected = e.target.value;
+                setDefaultLanguage(
+                  isEnglishDefaultLanguage(selected)
+                    ? ENGLISH_LANGUAGE
+                    : translationLanguageCode || selected,
+                );
+              }}
+              options={options}
+              placeholder="Select default language..."
+            />
+          )}
 
           <div>
             <label className="label" htmlFor="modal_verify_button_translation">
@@ -153,6 +190,23 @@ export default function TranslationSettingsModal({
               onChange={(e) => setVerifyButtonTranslation(e.target.value)}
             />
           </div>
+
+          <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={supportOverallApp}
+              onChange={(e) => setSupportOverallApp(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span>
+              <span className="block text-sm font-medium text-gray-700">
+                Translation Support To Overall app
+              </span>
+              <span className="block text-xs text-gray-500 mt-0.5">
+                Sync language options to FIELD users for this tenant on save.
+              </span>
+            </span>
+          </label>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>

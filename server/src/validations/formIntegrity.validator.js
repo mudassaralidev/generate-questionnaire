@@ -54,7 +54,7 @@ function validateFormIntegrity(questions, options = {}) {
     }
 
     // duplicate answer_key (image / dynamic_images questions may reuse the same key)
-    if (!["image", "dynamic_images"].includes(q.type) && q.answer_key) {
+    if (!["image", "dynamic_images", "text"].includes(q.type) && q.answer_key) {
       if (answerKeys.has(q.answer_key)) {
         errors.push(`Duplicate answer_key: "${q.answer_key}"`);
       }

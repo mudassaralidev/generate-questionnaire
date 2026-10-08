@@ -1,30 +1,37 @@
 const SUBMISSION_TYPE_VALUES = ["FOUND", "NOT_FOUND"];
 const SUBMISSION_FORM_TYPE = "submission";
-const ENGLISH_LANGUAGE = "ENGLISH";
+const ENGLISH_LANGUAGE = "EN";
 
 function requiresSubmissionType(formType) {
   return formType === SUBMISSION_FORM_TYPE;
 }
 
+function isEnglishDefaultLanguage(value) {
+  const normalized = String(value || "").trim();
+  return !normalized || normalized === ENGLISH_LANGUAGE;
+}
+
 /**
  * Normalize into nested `translation` object.
- * Supports legacy top-level requires_translation / translation_language / default_language.
  */
 function normalizeTranslationMeta(doc = {}) {
-  const raw = doc.translation ?? {};
+  const raw = doc?.translation || {};
 
   const requires_translation = Boolean(raw.requires_translation);
-  const translation_language = requires_translation
-    ? String(raw.translation_language || "").trim()
+  const translation_language_code = String(raw.translation_language_code || "")
+    .trim()
+    .toUpperCase();
+  const translation_language_title = requires_translation
+    ? String(raw.translation_language_title || "").trim()
     : "";
 
   let default_language = ENGLISH_LANGUAGE;
   if (requires_translation) {
     const rawDefault = String(raw.default_language || "").trim();
-    if (rawDefault === ENGLISH_LANGUAGE || !rawDefault) {
+    if (isEnglishDefaultLanguage(rawDefault)) {
       default_language = ENGLISH_LANGUAGE;
     } else {
-      default_language = translation_language || rawDefault;
+      default_language = translation_language_code || rawDefault.toUpperCase();
     }
   }
 
@@ -32,12 +39,33 @@ function normalizeTranslationMeta(doc = {}) {
     ? String(raw.verify_button_translation || "").trim()
     : "";
 
+  const translation_support_to_overall_app = requires_translation
+    ? Boolean(raw.translation_support_to_overall_app)
+    : false;
+
   return {
     requires_translation,
-    translation_language,
+    translation_language_code,
+    translation_language_title,
     default_language,
     verify_button_translation,
+    translation_support_to_overall_app,
   };
+}
+
+/** Build language_configuration payload for FIELD users */
+function buildLanguageConfiguration(translation = {}) {
+  const title = String(translation.translation_language_title || "").trim();
+  const code = String(translation.translation_language_code || "")
+    .trim()
+    .toUpperCase();
+
+  if (!title || !code) return null;
+
+  return [
+    { Label: "English", value: ENGLISH_LANGUAGE },
+    { Label: title, value: code },
+  ];
 }
 
 /** Map legacy stored meta → submission_type + form_type */
@@ -105,5 +133,6 @@ module.exports = {
   stripLegacyMetaFields,
   requiresSubmissionType,
   normalizeTranslationMeta,
+  buildLanguageConfiguration,
   ENGLISH_LANGUAGE,
 };
