@@ -46,8 +46,7 @@ export default function BuilderHeader() {
 
   const canDelete = mode === "edit" && Boolean(configId);
   const requires_translation = Boolean(translation?.requires_translation);
-  const translation_language_title =
-    translation?.translation_language_title || "";
+  const translation_language = translation?.translation_language || "";
   const translation_language_code =
     translation?.translation_language_code || "";
   const default_language = translation?.default_language || ENGLISH_LANGUAGE;
@@ -111,7 +110,7 @@ export default function BuilderHeader() {
       !String(translation_language_code || "").trim()
     ) {
       setErrors([
-        "Translation country is required when translation is enabled.",
+        "Translation language code is required when translation is enabled.",
       ]);
       setErrorMessage("Please fix the following errors before saving:");
       setShowErrors(true);
@@ -120,10 +119,10 @@ export default function BuilderHeader() {
 
     if (
       requires_translation &&
-      !String(translation_language_title || "").trim()
+      !String(translation_language || "").trim()
     ) {
       setErrors([
-        "Translation language title is required when translation is enabled.",
+        "Translation language is required when translation is enabled.",
       ]);
       setErrorMessage("Please fix the following errors before saving:");
       setShowErrors(true);
@@ -279,8 +278,8 @@ export default function BuilderHeader() {
                   Lang:{" "}
                   <span className="font-medium text-gray-700">
                     {requires_translation
-                      ? translation_language_title
-                        ? `${translation_language_title}${
+                      ? translation_language
+                        ? `${translation_language}${
                             translation_language_code
                               ? ` (${translation_language_code})`
                               : ""
@@ -383,7 +382,7 @@ export default function BuilderHeader() {
         open={showTranslationModal}
         initialValues={{
           translation_language_code,
-          translation_language_title,
+          translation_language,
           default_language,
           verify_button_translation:
             translation?.verify_button_translation || "",

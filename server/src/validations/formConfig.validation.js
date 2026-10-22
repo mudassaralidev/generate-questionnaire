@@ -1,4 +1,8 @@
 const Joi = require("joi");
+const {
+  LANGUAGE_CODE,
+  toLanguageCode,
+} = require("../utils/languageCountryCode");
 
 const objectId = Joi.string().pattern(/^[a-f\d]{24}$/i, "ObjectId");
 
@@ -169,52 +173,82 @@ const popDataSchema = Joi.object({
   cancel_button_text_translation: Joi.string().allow("").default(""),
 }).required();
 
-const ENGLISH_LANGUAGE = "EN";
+const ENGLISH_LANGUAGE = "en";
+
+const translationLanguageCodeSchema = Joi.string()
+  .trim()
+  .allow("")
+  .default("")
+  .custom((value, helpers) => {
+    if (!value) return "";
+    const code = toLanguageCode(value);
+    if (!LANGUAGE_CODE.test(code)) {
+      return helpers.message(
+        '"translation.translation_language_code" must be a lowercase language code',
+      );
+    }
+    return code;
+  });
+
+const translationConfigurationItemSchema = Joi.object({
+  label: Joi.string().trim().min(1).required(),
+  value: Joi.string().trim().lowercase().pattern(LANGUAGE_CODE).required(),
+  emoji: Joi.string().allow("").default(""),
+});
 
 const translationSchema = Joi.object({
   requires_translation: Joi.boolean().default(false),
-  translation_language_code: Joi.string()
-    .length(2)
-    .uppercase()
+  translation_language_code: translationLanguageCodeSchema,
+  translation_language: Joi.string().allow("").default(""),
+  translation_language_title: Joi.string().allow("").optional(),
+  default_language: Joi.string()
+    .trim()
+    .lowercase()
     .allow("")
-    .default(""),
-  translation_language_title: Joi.string().allow("").default(""),
-  default_language: Joi.string().allow("").default(ENGLISH_LANGUAGE),
+    .default(ENGLISH_LANGUAGE),
   verify_button_translation: Joi.string().allow("").default(""),
   translation_support_to_overall_app: Joi.boolean().default(false),
+  language_configuration: Joi.array()
+    .items(translationConfigurationItemSchema)
+    .default([]),
 }).default({
   requires_translation: false,
   translation_language_code: "",
-  translation_language_title: "",
+  translation_language: "",
   default_language: ENGLISH_LANGUAGE,
   verify_button_translation: "",
   translation_support_to_overall_app: false,
+  language_configuration: [],
 });
 
 function withTranslationRules(schema) {
   return schema.custom((value, helpers) => {
-    const translation = value.translation ?? {};
+    const translation = { ...(value.translation ?? {}) };
     const requires = Boolean(translation.requires_translation);
-    const languageCode = String(translation.translation_language_code || "")
-      .trim()
-      .toUpperCase();
+    const languageCode = toLanguageCode(
+      translation.translation_language_code || "",
+    );
     const language = String(
-      translation.translation_language_title || "",
+      translation.translation_language ||
+        translation.translation_language_title ||
+        "",
     ).trim();
-    const defaultLang = String(translation.default_language || "").trim();
+    const defaultLang = String(translation.default_language || "")
+      .trim()
+      .toLowerCase();
     const verifyButton = String(
       translation.verify_button_translation || "",
     ).trim();
 
     if (requires) {
-      if (!languageCode || languageCode.length !== 2) {
+      if (!LANGUAGE_CODE.test(languageCode)) {
         return helpers.message(
           '"translation.translation_language_code" is required when translation is enabled',
         );
       }
       if (!language) {
         return helpers.message(
-          '"translation.translation_language_title" is required when translation is enabled',
+          '"translation.translation_language" is required when translation is enabled',
         );
       }
       if (!verifyButton) {
@@ -223,11 +257,58 @@ function withTranslationRules(schema) {
         );
       }
       const isEnglishDefault = !defaultLang || defaultLang === ENGLISH_LANGUAGE;
-      if (!isEnglishDefault && defaultLang.toUpperCase() !== languageCode) {
+      const normalizedDefault = isEnglishDefault
+        ? ENGLISH_LANGUAGE
+        : toLanguageCode(defaultLang);
+      if (!isEnglishDefault && normalizedDefault !== languageCode) {
         return helpers.message(
           '"translation.default_language" must be en or match translation_language_code',
         );
       }
+
+      const supportOverallApp = Boolean(
+        translation.translation_support_to_overall_app,
+      );
+      const configuration = Array.isArray(translation.language_configuration)
+        ? translation.language_configuration
+            .map((item) => ({
+              label: String(item?.label || "").trim(),
+              value: toLanguageCode(item?.value || ""),
+              emoji: String(item?.emoji || "").trim(),
+            }))
+            .filter((item) => item.label && LANGUAGE_CODE.test(item.value))
+        : [];
+
+      if (supportOverallApp) {
+        if (configuration.length < 2) {
+          return helpers.message(
+            '"translation.language_configuration" is required when overall app translation support is enabled',
+          );
+        }
+        const hasEnglish = configuration.some(
+          (item) => item.value === ENGLISH_LANGUAGE,
+        );
+        const hasSelected = configuration.some(
+          (item) => item.value === languageCode,
+        );
+        if (!hasEnglish || !hasSelected) {
+          return helpers.message(
+            '"translation.language_configuration" must include English and the selected language',
+          );
+        }
+      }
+
+      translation.translation_language_code = languageCode;
+      translation.translation_language = language;
+      translation.default_language = isEnglishDefault
+        ? ENGLISH_LANGUAGE
+        : languageCode;
+      translation.translation_support_to_overall_app = supportOverallApp;
+      translation.language_configuration = supportOverallApp
+        ? configuration
+        : [];
+      delete translation.translation_language_title;
+      return { ...value, translation };
     }
 
     return value;

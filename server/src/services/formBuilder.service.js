@@ -8,31 +8,42 @@ const {
   normalizeConfigMeta,
   stripLegacyMetaFields,
   requiresSubmissionType,
-  buildLanguageConfiguration,
 } = require("../utils/formMeta");
 
 const EMPTY_TRANSLATION = {
   requires_translation: false,
   translation_language_code: "",
-  translation_language_title: "",
-  default_language: "EN",
+  translation_language: "",
+  default_language: "en",
   verify_button_translation: "",
   translation_support_to_overall_app: false,
+  language_configuration: [],
 };
 
 /**
- * When overall-app translation support is enabled, sync language_configuration
- * onto all FIELD-role users for the tenant.
+ * When overall-app translation support is enabled, sync the FE-provided
+ * language_configuration onto all FIELD-role users for the tenant.
  */
 async function syncFieldUserLanguageConfiguration(tenant, translation) {
   if (!tenant || !translation?.translation_support_to_overall_app) return;
 
-  const languageConfiguration = buildLanguageConfiguration(translation);
-  if (!languageConfiguration) return;
+  const translationConfiguration = Array.isArray(
+    translation.language_configuration,
+  )
+    ? translation.language_configuration
+    : [];
+  if (!translationConfiguration.length) return;
 
   await User.updateMany(
-    { tenant, role: "FIELD" },
-    { $set: { language_configuration: languageConfiguration } },
+    { tenant, role: { $ne: "ADMIN" } },
+    {
+      $set: {
+        language_configuration: {
+          languages: translationConfiguration,
+          default_language: translation.default_language || "en",
+        },
+      },
+    },
   );
 }
 

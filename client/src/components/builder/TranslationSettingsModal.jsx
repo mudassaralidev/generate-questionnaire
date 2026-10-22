@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import SearchableSelect from "../common/SearchableSelect";
-import { COUNTRY_OPTIONS } from "../../constants/countries";
+import { TRANSLATION_LANGUAGE_CODE_OPTIONS } from "../../constants/languageCountryCodes";
 import {
   ENGLISH_LANGUAGE,
   getDefaultLanguageOptions,
@@ -30,7 +30,7 @@ export default function TranslationSettingsModal({
       },
     });
     setTranslationLanguageCode(normalized.translation_language_code || "");
-    setTranslationLanguage(normalized.translation_language_title || "");
+    setTranslationLanguage(normalized.translation_language || "");
     setDefaultLanguage(normalized.default_language || ENGLISH_LANGUAGE);
     setVerifyButtonTranslation(normalized.verify_button_translation || "");
     setSupportOverallApp(
@@ -56,9 +56,7 @@ export default function TranslationSettingsModal({
   });
 
   const handleCountryChange = (e) => {
-    const code = String(e.target.value || "")
-      .trim()
-      .toUpperCase();
+    const code = String(e.target.value || "").trim().toLowerCase();
     setTranslationLanguageCode(code);
     if (!isEnglishDefaultLanguage(defaultLanguage)) {
       setDefaultLanguage(code || ENGLISH_LANGUAGE);
@@ -66,18 +64,16 @@ export default function TranslationSettingsModal({
   };
 
   const handleConfirm = () => {
-    const code = String(translationLanguageCode || "")
-      .trim()
-      .toUpperCase();
+    const code = String(translationLanguageCode || "").trim().toLowerCase();
     const title = String(translationLanguage || "").trim();
     const verifyTrimmed = String(verifyButtonTranslation || "").trim();
 
     if (!code) {
-      setError("Please select a translation country.");
+      setError("Please select a translation language code.");
       return;
     }
     if (!title) {
-      setError("Translation language title is required.");
+      setError("Translation language is required.");
       return;
     }
     if (!verifyTrimmed) {
@@ -89,7 +85,7 @@ export default function TranslationSettingsModal({
       translation: {
         requires_translation: true,
         translation_language_code: code,
-        translation_language_title: title,
+        translation_language: title,
         default_language: isEnglishDefaultLanguage(defaultLanguage)
           ? ENGLISH_LANGUAGE
           : code,
@@ -124,24 +120,24 @@ export default function TranslationSettingsModal({
             Enable Translation
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Select the country, language title, default language, and verify
-            button translation for this questionnaire.
+            Select the translation language code, translation language, default
+            language, and verify button translation for this questionnaire.
           </p>
         </header>
 
         <div className="space-y-4 px-5 py-5 sm:px-6">
           <SearchableSelect
-            label="Translation country"
+            label="Translation language code"
             value={translationLanguageCode}
             onChange={handleCountryChange}
-            options={COUNTRY_OPTIONS.filter((opt) => opt.value)}
-            placeholder="Search country..."
+            options={TRANSLATION_LANGUAGE_CODE_OPTIONS}
+            placeholder="Search language..."
           />
 
           {Boolean(translationLanguageCode) && (
             <div>
               <label className="label" htmlFor="modal_translation_language">
-                Translation Language Title
+                Translation Language
                 <span className="ml-0.5 text-red-500">*</span>
               </label>
               <input

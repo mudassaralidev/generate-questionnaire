@@ -1,3 +1,8 @@
+import {
+  buildTranslationConfiguration,
+  toLanguageCode,
+} from "./languageCountryCodes";
+
 export const SUBMISSION_TYPES = [
   { value: "FOUND", label: "Found" },
   { value: "NOT_FOUND", label: "Not Found" },
@@ -11,7 +16,7 @@ export const FORM_TYPES = [
 
 export const SUBMISSION_FORM_TYPE = "submission";
 
-export const ENGLISH_LANGUAGE = "EN";
+export const ENGLISH_LANGUAGE = "en";
 
 export const EMPTY_POP_DATA = {
   confirmation_text: "",
@@ -25,10 +30,11 @@ export const EMPTY_POP_DATA = {
 export const EMPTY_TRANSLATION = {
   requires_translation: false,
   translation_language_code: "",
-  translation_language_title: "",
+  translation_language: "",
   default_language: ENGLISH_LANGUAGE,
   verify_button_translation: "",
   translation_support_to_overall_app: false,
+  language_configuration: [],
 };
 
 /** @deprecated use EMPTY_TRANSLATION */
@@ -43,7 +49,9 @@ export function translationKeyFor(field) {
 }
 
 export function isEnglishDefaultLanguage(value) {
-  const normalized = String(value || "").trim();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   return !normalized || normalized === ENGLISH_LANGUAGE;
 }
 
@@ -76,11 +84,13 @@ export function normalizeTranslationMeta(source = {}) {
   const raw = source?.translation || {};
 
   const requires_translation = Boolean(raw?.requires_translation);
-  const translation_language_code = String(raw?.translation_language_code || "")
-    .trim()
-    .toUpperCase();
-  const translation_language_title = requires_translation
-    ? String(raw?.translation_language_title || "").trim()
+  const translation_language_code = toLanguageCode(
+    raw?.translation_language_code || "",
+  );
+  const translation_language = requires_translation
+    ? String(
+        raw?.translation_language || raw?.translation_language_title || "",
+      ).trim()
     : "";
 
   let default_language = ENGLISH_LANGUAGE;
@@ -89,8 +99,8 @@ export function normalizeTranslationMeta(source = {}) {
     if (isEnglishDefaultLanguage(rawDefault)) {
       default_language = ENGLISH_LANGUAGE;
     } else {
-      // Non-English default stores the selected country Alpha-2 code
-      default_language = translation_language_code || rawDefault.toUpperCase();
+      default_language =
+        translation_language_code || toLanguageCode(rawDefault);
     }
   }
 
@@ -102,13 +112,24 @@ export function normalizeTranslationMeta(source = {}) {
     raw?.translation_support_to_overall_app,
   );
 
+  const language_configuration =
+    requires_translation && translation_support_to_overall_app
+      ? buildTranslationConfiguration({
+          translationLanguage: translation_language,
+          translationLanguageCode: translation_language_code,
+          englishLabel: "English",
+          englishCode: ENGLISH_LANGUAGE,
+        })
+      : [];
+
   return {
     requires_translation,
     translation_language_code,
-    translation_language_title,
+    translation_language,
     default_language,
     verify_button_translation,
     translation_support_to_overall_app,
+    language_configuration,
   };
 }
 
@@ -118,9 +139,7 @@ export function getDefaultLanguageOptions({
 } = {}) {
   const options = [{ value: ENGLISH_LANGUAGE, label: "English" }];
   const title = String(translationLanguage || "").trim();
-  const code = String(translationLanguageCode || "")
-    .trim()
-    .toUpperCase();
+  const code = toLanguageCode(translationLanguageCode);
   if (code) {
     options.push({
       value: code,
